@@ -5,7 +5,6 @@ import os
 
 load_dotenv()
 
-
 class PostgresDB:
     _instance = None
 
