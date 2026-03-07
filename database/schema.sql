@@ -89,7 +89,6 @@ CREATE TABLE order_documents (
 -- =========================================
 -- INDEXES
 -- =========================================
-CREATE INDEX idx_orders_client_id ON orders(client_id);
 CREATE INDEX idx_orders_external_buyer_id ON orders(external_buyer_id);
 CREATE INDEX idx_orders_address_id ON orders(address_id);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
