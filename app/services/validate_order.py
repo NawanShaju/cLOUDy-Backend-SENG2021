@@ -18,23 +18,25 @@ def validate_order(data, buyerId):
         if not date:
             return f"{date_field} is required"
         
-    for fields in ["currency_code", "status"]:
+    for field in ["currency_code", "status"]:
         if not data.get(field):
             return f"'{field}' is required."
         
     
-    item = data.get("items")
+    items = data.get("items")
     
-    if not item:
+    if not items:
         return "no order was provided"
     
-    if not item.get("name"):
-        return "the item name is a required field"
+    if isinstance(items, dict):
+        items = [items]
     
-    if "quantity" not in item or not isinstance(item["quantity"], int) or item["quantity"] <= 0:
-        return f"quantity must be a positive integer."
-    
-    if "unit_price" not in item or not isinstance(item["unit_price"], int) or item["unit_price"] < 0:
-        return "unit_price must be a non-negative integer."
+    for item in items:
+        if not item.get("item_name"):
+            return f"item_name is required."
+        if "quantity" not in item or not isinstance(item["quantity"], int) or item["quantity"] <= 0:
+            return f"quantity must be a positive integer."
+        if "unit_price" not in item or not isinstance(item["unit_price"], (int, float)) or item["unit_price"] < 0:
+            return f"unit_price must be a non-negative integer."
     
     
