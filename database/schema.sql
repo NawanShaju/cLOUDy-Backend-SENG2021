@@ -4,7 +4,7 @@
 CREATE TABLE clients (
     client_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
     api_key VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -59,10 +59,8 @@ CREATE TABLE order_items (
     order_item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL,
     product_id UUID,
-    item_name VARCHAR(255),
-    item_description TEXT,
     quantity INTEGER,
-    unit_price INTEGER,
+    total_price INTEGER,
 
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
