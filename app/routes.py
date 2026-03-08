@@ -34,11 +34,45 @@ def create_order(buyerId):
     )
 
 
+@api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["PUT"])
+def update_order(buyerId, orderId):
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Invalid Json Provided"}), 400
+    
+    validate_error = validate_order(data)
+
+    if validate_error:
+        return jsonify({"error": validate_error}), 400
+    
+    if data.get("order_date"):
+        data["order_date"] = to_iso_date(data.get("order_date"))
+
+    if data.get("delivery_date"):
+        data["delivery_date"] = to_iso_date(data.get("delivery_date"))
+
+    result = update_order_service(buyerId, orderId, data)
+
+    if result.get("status") == 404:
+        return jsonify(result), 404
+
+    if result.get("status") == 500:
+        return jsonify(result), 500
+
+    xml_string = generate_xml(result)
+
+    return Response(
+        xml_string,
+        mimetype='application/xml',
+        status=200
+    )
+
+
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["DELETE"])
 def delete_order(buyerId, orderId):
-
     
-    result = delete_order(buyerId, orderId)
+    result = delete_order_service(buyerId, orderId)
 
     if result.get("status") == 404:
         return jsonify(result), 404
