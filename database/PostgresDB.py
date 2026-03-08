@@ -80,16 +80,26 @@ class PostgresDB:
         try:
             conn = self._get_connection()
             cur = conn.cursor()
+        
             cur.execute(query, params)
-            rows_affected = cur.rowcount
+
+            result = None
+
+            if cur.description is not None:
+                result = cur.fetchall()
+            else:
+                result = cur.rowcount
+
             conn.commit()
             cur.close()
-            
-            return rows_affected
+
+            return result
+
         except Exception as e:
             if conn:
                 conn.rollback()
             raise Exception(f"Insert/Update/Delete error: {e}")
+
         finally:
             if conn:
                 conn.close()

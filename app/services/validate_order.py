@@ -18,9 +18,8 @@ def validate_order(data, buyerId):
         if not date:
             return f"{date_field} is required"
         
-    for field in ["currency_code", "status"]:
-        if not data.get(field):
-            return f"'{field}' is required."
+    if not data.get("currency_code"):
+        return f"currency_code is required."
         
     
     items = data.get("items")
