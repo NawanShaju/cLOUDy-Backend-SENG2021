@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order
 from .services.xmlGeneraiton import generate_xml
+from .services.orderdb import create_order_db
 from .utils.helper import to_iso_date
 
 api = Blueprint("main", __name__)
@@ -22,10 +23,12 @@ def create_order(buyerId):
     data["order_date"] = to_iso_date(data.get("order_date"))
     data["delivery_date"] = to_iso_date(data.get("delivery_date"))
     
+    create_order_db(data, buyerId)
+    
     if validate_error:
         return jsonify({"error": validate_error}), 400
     
-    xml_string = generate_xml(data)
+    xml_string = generate_xml(data, buyerId)
     
     return Response(
         xml_string,
