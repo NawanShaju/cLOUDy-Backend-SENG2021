@@ -1,12 +1,12 @@
 from lxml import etree
 from datetime import datetime, timezone
 
-def generate_xml(data, buyerId):
+def generate_xml(data, orderId, buyerId):
     root = etree.Element("Order")
 
     # Order ID
-    order_id = etree.SubElement(root, "buyerID")
-    order_id.text = buyerId
+    order_id = etree.SubElement(root, "orderId")
+    order_id.text = orderId
 
     # IssueDate
     issue_date = etree.SubElement(root, "IssueDate")
@@ -23,7 +23,7 @@ def generate_xml(data, buyerId):
     # Buyer info
     buyer = etree.SubElement(root, "BuyerCustomerParty")
     buyer_id = etree.SubElement(buyer, "ID")
-    buyer_id.text = data.get("external_buyer_id", "UNKNOWN")
+    buyer_id.text = buyerId
 
     # Address
     address_data = data.get("address", {})
