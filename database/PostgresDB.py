@@ -22,9 +22,21 @@ class PostgresDB:
         self.database = os.getenv("DB_NAME")
         self.username = os.getenv("DB_USERNAME")
         self.password = os.getenv("DB_PASSWORD")
+        
+        self.conn = None
 
         self._validate_config()
         self._initialized = True
+        
+    def __enter__(self):
+        if not self.conn:
+            self._connect()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.conn:
+            self.conn.close()
+            self.conn = None
 
     def _validate_config(self):
         required_vars = {
@@ -71,9 +83,6 @@ class PostgresDB:
             return result
         except Exception as e:
             raise Exception(f"Query execution error: {e}")
-        finally:
-            if conn:
-                conn.close()
 
     def execute_insert_update_delete(self, query, params=None):
         conn = None
@@ -99,7 +108,4 @@ class PostgresDB:
             if conn:
                 conn.rollback()
             raise Exception(f"Insert/Update/Delete error: {e}")
-
-        finally:
-            if conn:
-                conn.close()
+        
