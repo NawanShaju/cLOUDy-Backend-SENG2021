@@ -29,14 +29,14 @@ class PostgresDB:
         self._initialized = True
         
     def __enter__(self):
-        if not self.conn:
-            self._connect()
+        self._connect()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.conn:
             self.conn.close()
             self.conn = None
+
 
     def _validate_config(self):
         required_vars = {
@@ -50,17 +50,18 @@ class PostgresDB:
         if missing_vars:
             raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-    def _get_connection(self):
+    def _connect(self):
+        if self.conn:
+            return self.conn
         try:
-            conn = psycopg2.connect(
+            self.conn = psycopg2.connect(
                 host=self.host,
                 port=self.port,
                 database=self.database,
                 user=self.username,
                 password=self.password,
             )
-            
-            return conn
+            return self.conn
         except OperationalError as e:
             raise OperationalError(f"Failed to connect to database: {e}")
         except DatabaseError as e:
@@ -69,7 +70,7 @@ class PostgresDB:
     def execute_query(self, query, params=None, fetch_all=False):
         conn = None
         try:
-            conn = self._get_connection()
+            conn = self.conn
             cur = conn.cursor()
             cur.execute(query, params)
             
@@ -87,7 +88,7 @@ class PostgresDB:
     def execute_insert_update_delete(self, query, params=None):
         conn = None
         try:
-            conn = self._get_connection()
+            conn = self.conn
             cur = conn.cursor()
         
             cur.execute(query, params)

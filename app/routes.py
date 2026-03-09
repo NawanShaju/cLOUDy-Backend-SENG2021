@@ -28,14 +28,10 @@ def create_order(buyerId):
     if validate_error:
         return jsonify({"error": validate_error}), 400
     
-    order_id = create_order_db(data, buyerId)
-    
-    print(order_id[0][0])
-    print(buyerId)
-    
-    xml_string = generate_xml(data, order_id[0][0], buyerId)
-    
-    xml_to_db(xml_string, order_id[0][0])
+    with PostgresDB() as db:
+        order_id = create_order_db(db, data, buyerId)
+        xml_string = generate_xml(data, order_id[0][0], buyerId)
+        xml_to_db(db, xml_string, order_id[0][0])
     
     return Response(
         xml_string,
