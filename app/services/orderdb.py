@@ -8,19 +8,16 @@ def create_order_db(data, buyerId):
 
     db = PostgresDB()
     
-
-    address_id = insert_address(data.get("address"))
-    product_ids = insert_product(data.get("items"))
+    address_id = insert_address(db, data.get("address"))
+    product_ids = insert_product(db, data.get("items"))
     
-    order_id = insert_order(data, buyerId, address_id)
+    order_id = insert_order(db, data, buyerId, address_id[0][0])
     
-    insert_order_item(data.get("items"), order_id, product_ids)
+    insert_order_item(db, data.get("items"), order_id[0][0], product_ids[0])
     
     return order_id
     
-def insert_order_item(items, order_id, product_ids):
-    
-    db = PostgresDB()
+def insert_order_item(db, items, order_id, product_ids):
 
     query = """
         INSERT INTO order_items (
@@ -38,18 +35,18 @@ def insert_order_item(items, order_id, product_ids):
     """
 
     for item, product_id in zip(items, product_ids):
+        print("TEST: ", int(item.get("unit_price") * item.get("quantity")))
         params = {
             "order_id": order_id,
             "product_id": product_id,
             "quantity": item.get("quantity"),
-            "total_price": item.get("unit_price") * item.get("quantity")
+            "total_price": int(item.get("unit_price") * item.get("quantity"))
         }
 
         db.execute_insert_update_delete(query, params)
     
     
-def insert_order(data, buyerId, address_id):
-    db = PostgresDB()
+def insert_order(db, data, buyerId, address_id):
     
     query = """
         INSERT INTO orders (
@@ -71,19 +68,18 @@ def insert_order(data, buyerId, address_id):
         RETURNING order_id
     """
     
-    params = []
-    status = "CREATED"
-    params.append(buyerId)
-    params.append(address_id)
-    params.append(data.get("order_date"))
-    params.append(data.get("delivery_date"))
-    params.append(data.get("currency_code"))
-    params.append(status)
+    params = {
+        "buyerId": buyerId,
+        "address_id": address_id,
+        "order_date": data.get("order_date"),
+        "delivery_date": data.get("delivery_date"),
+        "currency_code": data.get("currency_code"),
+        "status": "CREATED"
+    }
     
     return db.execute_insert_update_delete(query, params)
 
-def insert_product(items):
-    db = PostgresDB()
+def insert_product(db, items):
     
     query = """
         INSERT INTO products (
@@ -100,17 +96,16 @@ def insert_product(items):
     """
     
     product_ids = []
+    
 
     for item in items:
-        result = db.execute_insert_update_delete(query, item, True)
+        result = db.execute_insert_update_delete(query, item)
         product_ids.append(result[0])
 
     return product_ids
     
 
-def insert_address(address):
-    
-    db = PostgresDB()
+def insert_address(db, address):
     
     query = """
         INSERT INTO addresses (
@@ -129,10 +124,5 @@ def insert_address(address):
         )
         RETURNING address_id
     """
-    
-    params = []
-    for fields in address:
-        params.append(address.get(fields))
         
-        
-    return db.execute_insert_update_delete(query, params)
+    return db.execute_insert_update_delete(query, address)
