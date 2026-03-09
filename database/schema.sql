@@ -17,7 +17,7 @@ CREATE TABLE products (
     product_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_name VARCHAR(255),
     product_description TEXT,
-    unit_price INTEGER,
+    unit_price NUMERIC,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -60,7 +60,7 @@ CREATE TABLE order_items (
     order_id UUID NOT NULL,
     product_id UUID,
     quantity INTEGER,
-    total_price INTEGER,
+    total_price NUMERIC,
 
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,

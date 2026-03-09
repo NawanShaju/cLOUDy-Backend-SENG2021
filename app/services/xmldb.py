@@ -1,7 +1,6 @@
 from database.PostgresDB import PostgresDB
 
-def xml_to_db(xml, order_id):
-    db = PostgresDB()
+def xml_to_db(db, xml, order_id):
 
     query = """
         INSERT INTO order_documents (
@@ -23,4 +22,3 @@ def xml_to_db(xml, order_id):
     }
 
     db.execute_insert_update_delete(query, params)
-    
