@@ -61,9 +61,9 @@ CREATE TABLE orders (
 CREATE TABLE order_items (
     order_item_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL,
-    product_id UUID NOT NULL,
-    quantity INTEGER NOT NULL,
-    total_price  NUMERIC(12,2) NOT NULL,
+    product_id UUID,
+    quantity INTEGER,
+    total_price INTEGER,
 
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,

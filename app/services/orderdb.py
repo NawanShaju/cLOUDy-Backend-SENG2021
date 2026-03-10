@@ -1,31 +1,25 @@
 from flask import jsonify
-from database.PostgresDB import PostgresDB
 
-def create_order_db(data, buyerId):
+def create_order_db(db, data, buyerId):
     
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
-
-    db = PostgresDB()
     
     address_id = insert_address(db, data.get("address"))
     product_ids = insert_product(db, data.get("items"))
-    
     order_id = insert_order(db, data, buyerId, address_id[0][0])
-    
-    insert_order_item(db, data.get("items"), order_id[0][0], product_ids[0])
+    insert_order_item(db, data.get("items"), order_id[0][0], product_ids)
     
     return order_id
     
-def insert_order_item(db, items, order_id, product_ids):
-
+def insert_order_item(db, items, order_id, product_map):
     query = """
         INSERT INTO order_items (
             order_id,
             product_id,
             quantity,
             total_price
-        ) 
+        )
         VALUES (
             %(order_id)s,
             %(product_id)s,
@@ -36,11 +30,13 @@ def insert_order_item(db, items, order_id, product_ids):
         DO NOTHING
     """
 
-    for item, product_id in zip(items, product_ids):
+    for item in items:
+        product_id = product_map[item["item_name"]]
+
         params = {
             "order_id": order_id,
             "product_id": product_id,
-            "quantity": item.get("quantity"),
+            "quantity": int(item.get("quantity")),
             "total_price": item.get("unit_price") * item.get("quantity")
         }
 
@@ -81,13 +77,12 @@ def insert_order(db, data, buyerId, address_id):
     return db.execute_insert_update_delete(query, params)
 
 def insert_product(db, items):
-    
     query = """
         INSERT INTO products (
             product_name,
             product_description,
             unit_price
-        ) 
+        )
         VALUES (
             %(item_name)s,
             %(item_description)s,
@@ -98,15 +93,14 @@ def insert_product(db, items):
             product_name = EXCLUDED.product_name
         RETURNING product_id
     """
-    
-    product_ids = []
-    
+
+    product_map = {}
 
     for item in items:
         result = db.execute_insert_update_delete(query, item)
-        product_ids.append(result[0])
+        product_map[item["item_name"]] = result[0]
 
-    return product_ids
+    return product_map
     
 
 def insert_address(db, address):
