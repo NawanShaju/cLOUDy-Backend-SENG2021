@@ -26,6 +26,8 @@ def insert_order_item(db, items, order_id, product_map):
             %(quantity)s,
             %(total_price)s
         )
+        ON CONFLICT (order_id, product_id)
+        DO NOTHING
     """
 
     for item in items:
@@ -86,6 +88,9 @@ def insert_product(db, items):
             %(item_description)s,
             %(unit_price)s
         )
+        ON CONFLICT (product_name, unit_price)
+        DO UPDATE SET
+            product_name = EXCLUDED.product_name
         RETURNING product_id
     """
 
@@ -115,6 +120,9 @@ def insert_address(db, address):
             %(postal_code)s,
             %(country_code)s
         )
+        ON CONFLICT (street, city, state, postal_code, country_code)
+        DO UPDATE SET
+            street = EXCLUDED.street
         RETURNING address_id
     """
         

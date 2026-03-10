@@ -17,9 +17,10 @@ CREATE TABLE products (
     product_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_name VARCHAR(255),
     product_description TEXT,
-    unit_price NUMERIC,
+    unit_price NUMERIC(12,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_product UNIQUE (product_name, unit_price)
 );
 
 -- =========================================
@@ -31,7 +32,9 @@ CREATE TABLE addresses (
     city VARCHAR(100),
     state VARCHAR(100),
     postal_code VARCHAR(20),
-    country_code VARCHAR(10)
+    country_code VARCHAR(10),
+    CONSTRAINT unique_address 
+        UNIQUE (street, city, state, postal_code, country_code)
 );
 
 -- =========================================
@@ -60,13 +63,15 @@ CREATE TABLE order_items (
     order_id UUID NOT NULL,
     product_id UUID,
     quantity INTEGER,
-    total_price NUMERIC,
+    total_price INTEGER,
 
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
 
     CONSTRAINT fk_order_items_product
-        FOREIGN KEY (product_id) REFERENCES products(product_id)
+        FOREIGN KEY (product_id) REFERENCES products(product_id),
+
+    CONSTRAINT unique_order_product UNIQUE (order_id, product_id)
 );
 
 -- =========================================
