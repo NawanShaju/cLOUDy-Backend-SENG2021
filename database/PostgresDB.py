@@ -22,9 +22,21 @@ class PostgresDB:
         self.database = os.getenv("DB_NAME")
         self.username = os.getenv("DB_USERNAME")
         self.password = os.getenv("DB_PASSWORD")
+        
+        self.conn = None
 
         self._validate_config()
         self._initialized = True
+        
+    def __enter__(self):
+        self._connect()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.conn:
+            self.conn.close()
+            self.conn = None
+
 
     def _validate_config(self):
         required_vars = {
@@ -38,17 +50,18 @@ class PostgresDB:
         if missing_vars:
             raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-    def _get_connection(self):
+    def _connect(self):
+        if self.conn:
+            return self.conn
         try:
-            conn = psycopg2.connect(
+            self.conn = psycopg2.connect(
                 host=self.host,
                 port=self.port,
                 database=self.database,
                 user=self.username,
                 password=self.password,
             )
-            
-            return conn
+            return self.conn
         except OperationalError as e:
             raise OperationalError(f"Failed to connect to database: {e}")
         except DatabaseError as e:
@@ -57,7 +70,7 @@ class PostgresDB:
     def execute_query(self, query, params=None, fetch_all=False):
         conn = None
         try:
-            conn = self._get_connection()
+            conn = self.conn
             cur = conn.cursor()
             cur.execute(query, params)
             
@@ -71,25 +84,29 @@ class PostgresDB:
             return result
         except Exception as e:
             raise Exception(f"Query execution error: {e}")
-        finally:
-            if conn:
-                conn.close()
 
     def execute_insert_update_delete(self, query, params=None):
         conn = None
         try:
-            conn = self._get_connection()
+            conn = self.conn
             cur = conn.cursor()
+        
             cur.execute(query, params)
-            rows_affected = cur.rowcount
+
+            result = None
+
+            if cur.description is not None:
+                result = cur.fetchall()
+            else:
+                result = cur.rowcount
+
             conn.commit()
             cur.close()
-            
-            return rows_affected
+
+            return result
+
         except Exception as e:
             if conn:
                 conn.rollback()
             raise Exception(f"Insert/Update/Delete error: {e}")
-        finally:
-            if conn:
-                conn.close()
+        
