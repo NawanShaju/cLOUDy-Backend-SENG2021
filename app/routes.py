@@ -3,6 +3,7 @@ from .services.validate_order import validate_order
 from .services.xmlGeneraiton import generate_xml
 from .services.orderdb import create_order_db
 from .services.xmldb import xml_to_db
+from .services.xmldb import xml_to_db_update_delete
 from .utils.helper import to_iso_date
 from .services.orderdb import update_order_service
 from .services.orderdb import delete_order_service
@@ -56,16 +57,12 @@ def update_order(buyerId, orderId):
         data["delivery_date"] = to_iso_date(data.get("delivery_date"))
     
     with PostgresDB() as db:
-        results = update_order_service(db, buyerId, orderId, data)
-    xml_string = None
-    for result in results:
-        if result.get("status") == 404:
-            return jsonify(result), 404
-
-        if result.get("status") == 500:
-            return jsonify(result), 500
-
-        xml_string = generate_xml(result)
+        result = update_order_service(db, buyerId, orderId, data)
+        if not result:
+            return jsonify({"error": "Order not found"}), 404
+        xml_string = generate_xml(data, orderId, buyerId)
+        xml_to_db_update_delete(db, xml_string, orderId)
+    
 
     return Response(
         xml_string,

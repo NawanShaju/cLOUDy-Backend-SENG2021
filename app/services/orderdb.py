@@ -142,7 +142,7 @@ def update_order_db(db, data, buyerId, orderId):
         data["address_id"] = address_id[0][0]
 
     if data.get("items"):
-        product_ids = update_order_products(db, data.get("items"))
+        product_ids = update_order_product(db, data.get("items"))
         update_order_items(db, orderId, data.get("items"), product_ids)
 
     order = update_order_input(db, data, buyerId, orderId)
@@ -208,7 +208,7 @@ def update_order_items(db, order_id, items, product_map):
 
         db.execute_insert_update_delete(query, params)
 
-def update_insert_product(db, items):
+def update_order_product(db, items):
     query = """
         INSERT INTO products (
             product_name,

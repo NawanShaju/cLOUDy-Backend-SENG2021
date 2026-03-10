@@ -35,12 +35,12 @@ def xml_to_db_update_delete(db, xml, order_id):
         VALUES (
             %(order_id)s,
             %(xml_content)s,
-            (
-                SELECT COALESCE(MAX(document_version), 0) + 1
-                FROM order_documents
-                WHERE order_id = %(order_id)s
-            )
+            1
         )
+        ON CONFLICT (order_id)
+        DO UPDATE SET
+            xml_content      = EXCLUDED.xml_content,
+            document_version = order_documents.document_version + 1
     """
 
     params = {
