@@ -142,3 +142,76 @@ def update_order_service(db, buyerId, orderId, data):
     except Exception as e:
         return {"status": 500, "error": str(e)}
 
+
+def update_order_db(db, data, buyerId, orderId):
+    
+    if data.get("address"):
+        address_id = insert_address(db, data.get("address"))
+        data["address_id"] = address_id[0][0]
+
+    if data.get("items"):
+        product_ids = insert_product(db, data.get("items"))
+        update_order_items(db, orderId, data.get("items"), product_ids)
+
+    order = update_order_input(db, data, buyerId, orderId)
+
+    return order
+
+
+def update_order_input(db, data, buyerId, orderId):
+    query = """
+        UPDATE orders SET
+            order_date      = COALESCE(%(order_date)s, order_date),
+            delivery_date   = COALESCE(%(delivery_date)s, delivery_date),
+            currency_code   = COALESCE(%(currency_code)s, currency_code),
+            address_id      = COALESCE(%(address_id)s, address_id),
+            status          = COALESCE(%(status)s, status)
+        WHERE order_id = %(orderId)s
+        AND external_buyer_id = %(buyerId)s
+        RETURNING *
+    """
+
+    params = {
+        "order_date":    data.get("order_date"),
+        "delivery_date": data.get("delivery_date"),
+        "currency_code": data.get("currency_code"),
+        "address_id":    data.get("address_id"),
+        "status":        data.get("status"),
+        "orderId":       orderId,
+        "buyerId":       buyerId
+    }
+
+    return db.execute_insert_update_delete(query, params)
+
+
+def update_order_items(db, order_id, items, product_map):
+    query = """
+        INSERT INTO order_items (
+            order_id,
+            product_id,
+            quantity,
+            total_price
+        )
+        VALUES (
+            %(order_id)s,
+            %(product_id)s,
+            %(quantity)s,
+            %(total_price)s
+        )
+        ON CONFLICT (order_id, product_id)
+        DO UPDATE SET
+            quantity    = EXCLUDED.quantity,
+            total_price = EXCLUDED.total_price
+    """
+
+    for item in items:
+        product_id = product_map[item["item_name"]]
+
+        params = {
+            "order_id":    order_id,
+            "product_id":  product_id,
+            "quantity":    int(item.get("quantity")),
+            "total_price": item.get("unit_price") * item.get("quantity")
+        }
+
+        db.execute_insert_update_delete(query, params)
