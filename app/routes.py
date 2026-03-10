@@ -4,8 +4,8 @@ from .services.xmlGeneraiton import generate_xml
 from .services.orderdb import create_order_db
 from .services.xmldb import xml_to_db
 from .utils.helper import to_iso_date
-from services.orders import update_order_service
-from services.orders import delete_order_service
+from .services.orders import update_order_service
+from .services.orders import delete_order_service
 from database.PostgresDB import PostgresDB
 
 api = Blueprint("main", __name__)
@@ -59,8 +59,9 @@ def update_order(buyerId, orderId):
 
     if data.get("delivery_date"):
         data["delivery_date"] = to_iso_date(data.get("delivery_date"))
-
-    result = update_order_service(buyerId, orderId, data)
+    
+    with PostgresDB() as db:
+        result = update_order_service(db, buyerId, orderId, data)
 
     if result.get("status") == 404:
         return jsonify(result), 404
