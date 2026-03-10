@@ -32,15 +32,16 @@ def insert_order_item(db, items, order_id, product_ids):
             %(quantity)s,
             %(total_price)s
         )
+        ON CONFLICT (order_id, product_id)
+        DO NOTHING
     """
 
     for item, product_id in zip(items, product_ids):
-        print("TEST: ", int(item.get("unit_price") * item.get("quantity")))
         params = {
             "order_id": order_id,
             "product_id": product_id,
             "quantity": item.get("quantity"),
-            "total_price": int(item.get("unit_price") * item.get("quantity"))
+            "total_price": item.get("unit_price") * item.get("quantity")
         }
 
         db.execute_insert_update_delete(query, params)
@@ -92,6 +93,9 @@ def insert_product(db, items):
             %(item_description)s,
             %(unit_price)s
         )
+        ON CONFLICT (product_name, unit_price)
+        DO UPDATE SET
+            product_name = EXCLUDED.product_name
         RETURNING product_id
     """
     
@@ -122,6 +126,9 @@ def insert_address(db, address):
             %(postal_code)s,
             %(country_code)s
         )
+        ON CONFLICT (street, city, state, postal_code, country_code)
+        DO UPDATE SET
+            street = EXCLUDED.street
         RETURNING address_id
     """
         
