@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order
 from .services.xmlGeneraiton import generate_xml
-from .services.orderdb import create_order_db
+from .services.orderdb import create_order_db, get_order_details
 from .services.xmldb import xml_to_db
 from .services.xmldb import xml_to_db_update_delete
 from .utils.helper import to_iso_date
@@ -56,13 +56,7 @@ def update_order(buyerId, orderId):
 
     if data.get("delivery_date"):
         data["delivery_date"] = to_iso_date(data.get("delivery_date"))
-    
-    # with PostgresDB() as db:
-    #     result = update_order_service(db, buyerId, orderId, data)
-    #     if not result:
-    #         return jsonify({"error": "Order not found"}), 404
-    #     xml_string = generate_xml(data, orderId, buyerId)
-    #     xml_to_db_update_delete(db, xml_string, orderId)
+
     with PostgresDB() as db:
         result = update_order_service(db, buyerId, orderId, data)
         
@@ -79,6 +73,27 @@ def update_order(buyerId, orderId):
         mimetype='application/xml',
         status=200
     )
+
+
+@api.route("v1/buyer/<buyerId>/order/<orderId>", methods = ["GET"])
+def get_order_by_id(buyerId, orderId):
+
+    try:
+        with PostgresDB() as db:
+            order = get_order_details(db, buyerId, orderId) 
+        if not order:
+            return jsonify({
+                "status": 404,
+                "error": "Order couldnt be found"
+            }), 404
+
+        return jsonify(order), 200
+    
+    except Exception as r:
+        return jsonify({
+            "status": 500,
+            "error": str(r)
+        }), 500
 
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>/CANCELED", methods=["DELETE"])
@@ -103,3 +118,4 @@ def cancel_order(buyerId, orderId):
         return jsonify(result), 500
 
     return jsonify(result), 200
+

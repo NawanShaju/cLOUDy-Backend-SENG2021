@@ -1,4 +1,6 @@
 from flask import jsonify
+from database.PostgresDB import PostgresDB
+from .xmldb import get_order_xml
 
 def create_order_db(db, data, buyerId):
     
@@ -12,6 +14,45 @@ def create_order_db(db, data, buyerId):
     
     return order_id
     
+def get_order_details(db, buyerId, orderId):
+    query = """
+        SELECT
+            o.order_id,
+            oi.product_id,
+            oi.quantity,
+            oi.total_price,
+            o.status
+        FROM orders o
+        JOIN order_items oi
+            ON o.order_id = oi.order_id
+        WHERE o.order_id = %(order_id)s
+          AND o.external_buyer_id = %(buyer_id)s
+    """
+
+    params = {
+        "order_id": orderId,
+        "buyer_id": buyerId
+    }
+    
+    result = db.execute_query(query, params)
+
+    if not result:
+        return None
+    
+    xml_content = get_order_xml(db, orderId)
+    
+    if not xml_content:
+        return None
+
+    return {
+        "orderId": str(result[0]),
+        "productId": str(result[1]) if result[1] is not None else None,
+        "quantity": result[2],
+        "money": result[3],
+        "status": result[4],
+        "xml": xml_content
+    }
+
 def insert_order_item(db, items, order_id, product_map):
     query = """
         INSERT INTO order_items (
@@ -104,7 +145,6 @@ def insert_product(db, items):
     
 
 def insert_address(db, address):
-    
     query = """
         INSERT INTO addresses (
             street,
