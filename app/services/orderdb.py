@@ -27,7 +27,6 @@ def get_order_details(db, buyerId, orderId):
             ON o.order_id = oi.order_id
         WHERE o.order_id = %(order_id)s
           AND o.external_buyer_id = %(buyer_id)s
-        LIMIT 1
     """
 
     params = {

@@ -34,7 +34,7 @@ def get_order_xml(db, order_id):
         "order_id": order_id
     }
 
-    result = db.execute_query(query, params)
+    result = db.execute_query(query, params, True)
 
     if not result:
         return None
