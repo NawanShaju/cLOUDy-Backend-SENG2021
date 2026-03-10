@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order
 from .services.xmlGeneraiton import generate_xml
-from .services.orderdb import create_order_db
+from .services.orderdb import create_order_db, get_order_details
 from .services.xmldb import xml_to_db
 from .utils.helper import to_iso_date
 from database.PostgresDB import PostgresDB
@@ -38,3 +38,23 @@ def create_order(buyerId):
         mimetype='application/xml',
         status=200
     )
+
+@api.route("v1/buyer/<buyerId>/order/<orderId>", methods = ["GET"])
+def get_order_by_id(buyerId, orderId):
+
+    try:
+        with PostgresDB() as db:
+            order = get_order_details(db, buyerId, orderId) 
+        if not order:
+            return jsonify({
+                "status": 404,
+                "error": "Order couldnt be found"
+            }), 404
+
+        return jsonify(order), 200
+    
+    except Exception as r:
+        return jsonify({
+            "status": 500,
+            "error": str(r)
+        }), 500
