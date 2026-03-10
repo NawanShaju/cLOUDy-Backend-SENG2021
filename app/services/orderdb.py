@@ -131,16 +131,8 @@ def insert_address(db, address):
 
 
 def update_order_service(db, buyerId, orderId, data):
-    try:
-        result = update_order_db(db, data, buyerId, orderId)
-        
-        if not result:
-            return {"status": 404, "error": "Order not found"}
-        
-        return result
-    
-    except Exception as e:
-        return {"status": 500, "error": str(e)}
+    result = update_order_db(db, data, buyerId, orderId)
+    return result
 
 
 def update_order_db(db, data, buyerId, orderId):
