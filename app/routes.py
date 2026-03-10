@@ -81,7 +81,7 @@ def update_order(buyerId, orderId):
     )
 
 
-@api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["DELETE"])
+@api.route("/v1/buyer/<buyerId>/order/<orderId>/CANCELED", methods=["DELETE"])
 def cancel_order(buyerId, orderId):
     
     with PostgresDB() as db:
