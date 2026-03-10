@@ -22,3 +22,21 @@ def xml_to_db(db, xml, order_id):
     }
 
     db.execute_insert_update_delete(query, params)
+
+def get_order_xml(db, order_id):
+    query = """
+        SELECT xml_content
+        FROM order_documents
+        WHERE order_id = %(order_id)s
+    """
+
+    params = {
+        "order_id": order_id
+    }
+
+    result = db.execute_query(query, params)
+
+    if not result:
+        return None
+
+    return result[0]
