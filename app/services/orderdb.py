@@ -142,7 +142,7 @@ def update_order_db(db, data, buyerId, orderId):
         data["address_id"] = address_id[0][0]
 
     if data.get("items"):
-        product_ids = insert_product(db, data.get("items"))
+        product_ids = update_order_products(db, data.get("items"))
         update_order_items(db, orderId, data.get("items"), product_ids)
 
     order = update_order_input(db, data, buyerId, orderId)
@@ -208,6 +208,33 @@ def update_order_items(db, order_id, items, product_map):
 
         db.execute_insert_update_delete(query, params)
 
+def update_insert_product(db, items):
+    query = """
+        INSERT INTO products (
+            product_name,
+            product_description,
+            unit_price
+        )
+        VALUES (
+            %(item_name)s,
+            %(item_description)s,
+            %(unit_price)s
+        )
+        ON CONFLICT (product_name, unit_price)
+        DO UPDATE SET
+            product_name        = EXCLUDED.product_name,
+            product_description = EXCLUDED.product_description,
+            unit_price          = EXCLUDED.unit_price
+        RETURNING product_id
+    """
+
+    product_map = {}
+
+    for item in items:
+        result = db.execute_insert_update_delete(query, item)
+        product_map[item["item_name"]] = result[0]
+
+    return product_map
 
 def delete_order_service(db, buyer_id, order_id):
     result = delete_order_db(db, buyer_id, order_id)
@@ -216,14 +243,17 @@ def delete_order_service(db, buyer_id, order_id):
 
 def delete_order_db(db, buyer_id, order_id):
     order = get_order_db(db, buyer_id, order_id)
-
+    
     if not order:
         return {"status": 404, "error": "Order not found"}
-
-    if order["external_buyer_id"] != buyer_id:
+    print("here")
+    print(order)
+    print(order[1])
+    print(buyer_id)
+    if order[1] != buyer_id:
         return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
 
-    if order["status"] in ("CANCELED", "PROCESSED", "FINALISED"):
+    if order[6] in ("CANCELED", "PROCESSED", "FINALISED"):
         return {"status": 409, "error": "Order cannot be deleted due to current status"}
 
     delete_order_input(db, order_id)
@@ -246,7 +276,7 @@ def get_order_db(db, buyer_id, order_id):
         "buyer_id": buyer_id
     }
     result = db.execute_query(query, params)
-    return result[0] if result else None
+    return result
 
 
 def delete_order_input(db, order_id):
