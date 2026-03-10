@@ -81,7 +81,8 @@ def update_order(buyerId, orderId):
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["DELETE"])
 def delete_order(buyerId, orderId):
     
-    result = delete_order_service(buyerId, orderId)
+    with PostgresDB() as db:
+        result = delete_order_service(db, buyerId, orderId)
 
     if result.get("status") == 404:
         return jsonify(result), 404
