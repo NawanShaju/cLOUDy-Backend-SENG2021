@@ -138,7 +138,7 @@ def update_order_service(db, buyerId, orderId, data):
 def update_order_db(db, data, buyerId, orderId):
     
     if data.get("address"):
-        address_id = insert_address(db, data.get("address"))
+        address_id = update_address(db, data.get("address"))
         data["address_id"] = address_id[0][0]
 
     if data.get("items"):
@@ -149,6 +149,22 @@ def update_order_db(db, data, buyerId, orderId):
 
     return order
 
+def update_address(db, address):
+    query = """
+        UPDATE addresses SET
+            street       = %(street)s,
+            city         = %(city)s,
+            state        = %(state)s,
+            postal_code  = %(postal_code)s,
+            country_code = %(country_code)s
+        WHERE street      = %(street)s
+        AND city          = %(city)s
+        AND state         = %(state)s
+        AND postal_code   = %(postal_code)s
+        AND country_code  = %(country_code)s
+        RETURNING address_id
+    """
+    return db.execute_insert_update_delete(query, address)
 
 def update_order_input(db, data, buyerId, orderId):
     query = """
