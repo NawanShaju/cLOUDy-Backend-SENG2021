@@ -207,3 +207,53 @@ def update_order_items(db, order_id, items, product_map):
         }
 
         db.execute_insert_update_delete(query, params)
+
+
+def delete_order_service(db, buyer_id, order_id):
+    result = delete_order_db(db, buyer_id, order_id)
+    return result
+
+
+def delete_order_db(db, buyer_id, order_id):
+    order = get_order_db(db, buyer_id, order_id)
+
+    if not order:
+        return {"status": 404, "error": "Order not found"}
+
+    if order["external_buyer_id"] != buyer_id:
+        return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
+
+    if order["status"] in ("CANCELED", "PROCESSED", "FINALISED"):
+        return {"status": 409, "error": "Order cannot be deleted due to current status"}
+
+    delete_order_input(db, order_id)
+
+    return {
+        "orderId": order_id,
+        "status": "CANCELED",
+        "message": "Order deleted successfully"
+    }
+
+
+def get_order_db(db, buyer_id, order_id):
+    query = """
+        SELECT * FROM orders
+        WHERE order_id = %(order_id)s
+        AND external_buyer_id = %(buyer_id)s
+    """
+    params = {
+        "order_id": order_id,
+        "buyer_id": buyer_id
+    }
+    result = db.execute_query(query, params)
+    return result[0] if result else None
+
+
+def delete_order_input(db, order_id):
+    query = """
+        UPDATE orders
+        SET status = 'CANCELED'
+        WHERE order_id = %(order_id)s
+    """
+    params = {"order_id": order_id}
+    db.execute_insert_update_delete(query, params)

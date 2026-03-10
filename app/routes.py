@@ -84,6 +84,9 @@ def delete_order(buyerId, orderId):
     with PostgresDB() as db:
         result = delete_order_service(db, buyerId, orderId)
 
+    if result.get("status") == 401:
+        return jsonify(result), 401
+    
     if result.get("status") == 404:
         return jsonify(result), 404
 
