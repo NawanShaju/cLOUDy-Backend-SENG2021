@@ -53,8 +53,6 @@ def get_order_details(db, buyerId, orderId):
         "xml": xml_content
     }
 
-
-
 def insert_order_item(db, items, order_id, product_map):
     query = """
         INSERT INTO order_items (

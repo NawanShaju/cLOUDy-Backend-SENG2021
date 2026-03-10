@@ -50,9 +50,11 @@ def get_order_by_id(buyerId, orderId):
                 "status": 404,
                 "error": "Order couldnt be found"
             }), 404
-        
+
         return jsonify(order), 200
     
     except Exception as r:
-        print("test 2")
-        print(r)
+        return jsonify({
+            "status": 500,
+            "error": str(r)
+        }), 500
