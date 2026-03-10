@@ -22,3 +22,30 @@ def xml_to_db(db, xml, order_id):
     }
 
     db.execute_insert_update_delete(query, params)
+
+
+def xml_to_db_update(db, xml, order_id):
+
+    query = """
+        INSERT INTO order_documents (
+            order_id,
+            xml_content,
+            document_version
+        )
+        VALUES (
+            %(order_id)s,
+            %(xml_content)s,
+            (
+                SELECT COALESCE(MAX(document_version), 0) + 1
+                FROM order_documents
+                WHERE order_id = %(order_id)s
+            )
+        )
+    """
+
+    params = {
+        "order_id": order_id,
+        "xml_content": xml,
+    }
+
+    db.execute_insert_update_delete(query, params)
