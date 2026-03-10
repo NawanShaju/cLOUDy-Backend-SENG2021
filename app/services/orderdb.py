@@ -33,17 +33,17 @@ def get_order_details(db, buyerId, orderId):
         "order_id": orderId,
         "buyer_id": buyerId
     }
-
+    
     result = db.execute_query(query, params)
 
     if not result:
         return None
     
     xml_content = get_order_xml(db, orderId)
-
+    
     if not xml_content:
         return None
-    
+
     return {
         "orderId": str(result[0]),
         "productId": str(result[1]) if result[1] is not None else None,

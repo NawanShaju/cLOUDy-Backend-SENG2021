@@ -43,7 +43,8 @@ def create_order(buyerId):
 def get_order_by_id(buyerId, orderId):
 
     try:
-        order = get_order_details(buyerId, orderId) 
+        with PostgresDB() as db:
+            order = get_order_details(db, buyerId, orderId) 
         if not order:
             return jsonify({
                 "status": 404,
@@ -52,8 +53,6 @@ def get_order_by_id(buyerId, orderId):
         
         return jsonify(order), 200
     
-    except Exception:
-        return jsonify({
-            "status": 500,
-            "error": "Server error"
-        }), 500
+    except Exception as r:
+        print("test 2")
+        print(r)
