@@ -236,12 +236,12 @@ def update_order_product(db, items):
 
     return product_map
 
-def delete_order_service(db, buyer_id, order_id):
-    result = delete_order_db(db, buyer_id, order_id)
+def cancel_order_service(db, buyer_id, order_id):
+    result = cancel_order_db(db, buyer_id, order_id)
     return result
 
 
-def delete_order_db(db, buyer_id, order_id):
+def cancel_order_db(db, buyer_id, order_id):
     order = get_order_db(db, buyer_id, order_id)
     
     if not order:
@@ -256,7 +256,7 @@ def delete_order_db(db, buyer_id, order_id):
     if order[6] in ("CANCELED", "PROCESSED", "FINALISED"):
         return {"status": 409, "error": "Order cannot be deleted due to current status"}
 
-    delete_order_input(db, order_id)
+    cancel_order_input(db, order_id)
 
     return {
         "orderId": order_id,
@@ -279,7 +279,7 @@ def get_order_db(db, buyer_id, order_id):
     return result
 
 
-def delete_order_input(db, order_id):
+def cancel_order_input(db, order_id):
     query = """
         UPDATE orders
         SET status = 'CANCELED'
