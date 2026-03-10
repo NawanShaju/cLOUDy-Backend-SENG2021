@@ -7,6 +7,7 @@ from .services.xmldb import xml_to_db_update_delete
 from .utils.helper import to_iso_date
 from .services.orderdb import update_order_service
 from .services.orderdb import cancel_order_service
+from .services.orderdb import get_full_order_db
 from database.PostgresDB import PostgresDB
 
 api = Blueprint("main", __name__)
@@ -56,11 +57,20 @@ def update_order(buyerId, orderId):
     if data.get("delivery_date"):
         data["delivery_date"] = to_iso_date(data.get("delivery_date"))
     
+    # with PostgresDB() as db:
+    #     result = update_order_service(db, buyerId, orderId, data)
+    #     if not result:
+    #         return jsonify({"error": "Order not found"}), 404
+    #     xml_string = generate_xml(data, orderId, buyerId)
+    #     xml_to_db_update_delete(db, xml_string, orderId)
     with PostgresDB() as db:
         result = update_order_service(db, buyerId, orderId, data)
+        
         if not result:
             return jsonify({"error": "Order not found"}), 404
-        xml_string = generate_xml(data, orderId, buyerId)
+        
+        full_order = get_full_order_db(db, buyerId, orderId)
+        xml_string = generate_xml(full_order, orderId, buyerId)
         xml_to_db_update_delete(db, xml_string, orderId)
     
 
