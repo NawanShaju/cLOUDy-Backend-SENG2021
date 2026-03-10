@@ -24,7 +24,7 @@ def xml_to_db(db, xml, order_id):
     db.execute_insert_update_delete(query, params)
 
 
-def xml_to_db_update(db, xml, order_id):
+def xml_to_db_update_delete(db, xml, order_id):
 
     query = """
         INSERT INTO order_documents (
