@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order
 from .services.xmlGeneraiton import generate_xml
-from .services.orderdb import create_order_db, get_order_details
+from .services.orderdb import create_order_db, get_order_details, get_orders_for_buyer_db
 from .services.xmldb import xml_to_db
 from .services.xmldb import xml_to_db_update_delete
 from .utils.helper import to_iso_date
@@ -119,3 +119,70 @@ def cancel_order(buyerId, orderId):
 
     return jsonify(result), 200
 
+@api.route("v1/buyer/<buyerId>/order", methods = ["GET"])
+def get_orders_for_buyer(buyerId):
+    try:
+        status = request.args.get("status")
+        from_date = request.args.get("fromDate")
+        to_date = request.args.get("toDate")
+        limit = request.args.get("limit", 10)
+        offset = request.args.get("offset", 0)
+
+        try:
+            limit = int(limit)
+            offset = int(offset)
+        except ValueError:
+            return jsonify({
+                "status": 400,
+                "error": "limit and offset must be integers"
+            }), 400
+        
+        if limit <= 0 or offset < 0:
+            return jsonify({
+                "status": 400,
+                "error": "limit must be greater than 0 and offset must be 0 or more"
+            }), 400
+        
+        try:
+            if from_date:
+                from_date = to_iso_date(from_date)
+            if to_date:
+                to_date = to_iso_date(to_date)
+        except ValueError as e:
+            return jsonify({
+                "status": 400,
+                "error": str(e)
+            }), 400
+        
+        with PostgresDB() as db:
+            orders = get_orders_for_buyer_db(
+                db,
+                buyerId,
+                status,
+                from_date,
+                to_date,
+                limit,
+                offset
+            )
+
+        if orders is None:
+            return jsonify({
+                "status": 404,
+                "error": "Buyer not found"
+            }), 404
+        
+        return jsonify({
+            "status": 200,
+            "message": "All orders for a buyer",
+            "buyerId": buyerId,
+            "count": len(orders),
+            "limit": limit,
+            "offset": offset,
+            "orders": orders
+        }), 200
+    
+    except Exception as e:
+        return jsonify({
+            "status": 500,
+            "error": str(e)
+        }), 500
