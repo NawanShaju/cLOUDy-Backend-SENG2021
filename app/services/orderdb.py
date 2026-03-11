@@ -145,7 +145,6 @@ def insert_product(db, items):
     
 
 def insert_address(db, address):
-    
     query = """
         INSERT INTO addresses (
             street,
