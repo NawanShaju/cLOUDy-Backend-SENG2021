@@ -423,22 +423,17 @@ def get_orders_for_buyer_db(db, buyerId, status=None, from_date=None, to_date=No
         return None
     
     query = """
-        SELECT
+       SELECT
             o.order_id,
-            oi.product_id,
-            p.product_name,
-            p.product_description,
-            oi.quantity,
-            oi.total_price,
             o.status,
             o.order_date,
             o.delivery_date,
-            o.currency_code
+            o.currency_code,
+            COUNT(oi.order_item_id) AS item_count,
+            COALESCE(SUM(oi.total_price), 0) AS total_amount
         FROM orders o
-        JOIN order_items oi
+        LEFT JOIN order_items oi
             ON o.order_id = oi.order_id
-        LEFT JOIN products p
-            ON oi.product_id = p.product_id
         WHERE o.external_buyer_id = %(buyer_id)s
     """
 
@@ -449,8 +444,8 @@ def get_orders_for_buyer_db(db, buyerId, status=None, from_date=None, to_date=No
     }
 
     if status:
-        query += " AND o.status = %(status)s"
-        params["status"] = status.upper()
+        query += " AND UPPER(o.status) = UPPER(%(status)s)"
+        params["status"] = status.strip()
 
     if from_date:
         query += " AND o.order_date >= %(from_date)s::date"
@@ -461,6 +456,12 @@ def get_orders_for_buyer_db(db, buyerId, status=None, from_date=None, to_date=No
         params["to_date"] = to_date
 
     query += """
+        GROUP BY
+            o.order_id,
+            o.status,
+            o.order_date,
+            o.delivery_date,
+            o.currency_code
         ORDER BY o.order_date DESC, o.order_id
         LIMIT %(limit)s
         OFFSET %(offset)s
@@ -472,15 +473,12 @@ def get_orders_for_buyer_db(db, buyerId, status=None, from_date=None, to_date=No
     for row in results:
         orders.append({
             "orderId": str(row[0]),
-            "productId": str(row[1]) if row[1] is not None else None,
-            "itemName": row[2],
-            "itemDescription": row[3],
-            "quantity": row[4],
-            "totalPrice": row[5],
-            "status": row[6],
-            "orderDate": row[7].isoformat() if row[7] else None,
-            "deliveryDate": row[8].isoformat() if row[8] else None,
-            "currencyCode": row[9]
+            "status": row[1],
+            "orderDate": row[2].isoformat() if row[2] else None,
+            "deliveryDate": row[3].isoformat() if row[3] else None,
+            "currencyCode": row[4],
+            "itemCount": row[5],
+            "totalAmount": str(row[6]) if row[6] is not None else "0"
         })
 
     return orders
