@@ -1,0 +1,165 @@
+openapi: 3.0.0
+info:
+  title: Order API
+  description: API for creating orders
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5000
+
+paths:
+  /v1/buyer/{buyerId}/order:
+    post:
+      summary: Create a new order
+      description: Creates an order for a buyer and returns generated XML.
+      parameters:
+        - name: buyerId
+          in: path
+          required: true
+          description: Unique buyer identifier
+          schema:
+            type: string
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+            example:
+              order_date: "2026-03-07"
+              supplier: "cLOUDy"
+              delivery_date: "2026-03-10"
+              currency_code: "AUD"
+              address:
+                street: "123 Main St"
+                city: "Sydney"
+                state: "NSW"
+                postal_code: "2000"
+                country_code: "AU"
+              items:
+                - item_name: "Steel Bolt"
+                  item_description: "High-strength steel bolt"
+                  quantity: 50
+                  unit_price: 1.5
+                - item_name: "Pipe"
+                  item_description: "High-strength steel pipe"
+                  quantity: 50
+                  unit_price: 1.5
+
+      responses:
+        "200":
+          description: Order created successfully
+          content:
+            application/xml:
+              schema:
+                type: string
+                example: "<order><id>123</id></order>"
+
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Invalid Json Provided"
+
+components:
+  schemas:
+
+    OrderRequest:
+      type: object
+      required:
+        - order_date
+        - supplier
+        - delivery_date
+        - currency_code
+        - address
+        - items
+      properties:
+        order_date:
+          type: string
+          format: date
+          example: "2026-03-07"
+
+        supplier:
+          type: string
+          example: "cLOUDy"
+
+        delivery_date:
+          type: string
+          format: date
+          example: "2026-03-10"
+
+        currency_code:
+          type: string
+          example: "AUD"
+
+        address:
+          $ref: '#/components/schemas/Address'
+
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+
+    Address:
+      type: object
+      required:
+        - street
+        - city
+        - state
+        - postal_code
+        - country_code
+      properties:
+        street:
+          type: string
+          example: "123 Main St"
+
+        city:
+          type: string
+          example: "Sydney"
+
+        state:
+          type: string
+          example: "NSW"
+
+        postal_code:
+          type: string
+          example: "2000"
+
+        country_code:
+          type: string
+          example: "AU"
+
+    Item:
+      type: object
+      required:
+        - item_name
+        - quantity
+        - unit_price
+      properties:
+        item_name:
+          type: string
+          example: "Steel Bolt"
+
+        item_description:
+          type: string
+          example: "High-strength steel bolt"
+
+        quantity:
+          type: integer
+          example: 50
+
+        unit_price:
+          type: number
+          format: float
+          example: 1.5
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid Json Provided"
