@@ -3,6 +3,7 @@ from .services.validate_order import validate_order
 from .services.xmlGeneraiton import generate_xml
 from .services.orderdb import create_order_db
 from .services.xmldb import xml_to_db
+from .services.apiKey import get_api_key
 from .utils.helper import to_iso_date
 from database.PostgresDB import PostgresDB
 
@@ -38,3 +39,23 @@ def create_order(buyerId):
         mimetype='application/xml',
         status=200
     )
+    
+@api.route("/create-key", methods=["POST"])
+def create_apiKey():
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({"error": "Invalid json Provided"}), 400
+    
+    
+    username = data.get("username")
+    password = data.get("password")
+    
+    api_key = None
+    with PostgresDB() as db:
+        api_key = get_api_key(db, username, password)
+            
+    
+    return jsonify({
+        "apikey": api_key
+    })
