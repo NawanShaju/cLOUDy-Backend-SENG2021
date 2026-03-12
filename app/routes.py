@@ -1,8 +1,10 @@
 from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order
-from .services.xmlGeneraiton import generate_xml
+from .services.xmlGeneration import generate_xml
+from .services.apiKey import validate_api_key
 from .services.orderdb import create_order_db, get_order_details, get_orders_for_buyer_db
 from .services.xmldb import xml_to_db
+from .services.apiKey import get_api_key
 from .services.xmldb import xml_to_db_update_delete
 from .utils.helper import to_iso_date
 from .services.orderdb import update_order_service
@@ -17,6 +19,7 @@ def health_check():
     return jsonify({"status": "running"}), 200
 
 @api.route("v1/buyer/<buyerId>/order", methods=["POST"])
+@validate_api_key
 def create_order(buyerId):
     
     data = request.get_json()
@@ -42,6 +45,32 @@ def create_order(buyerId):
         mimetype='application/xml',
         status=200
     )
+    
+@api.route("/create-key", methods=["POST"])
+def create_apiKey():
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({"error": "Invalid json Provided"}), 400
+    
+    
+    username = data.get("username")
+    password = data.get("password")
+    
+    api_key = None
+    with PostgresDB() as db:
+        try:
+            api_key = get_api_key(db, username, password)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except PermissionError as e:
+            return jsonify({"error": str(e)}), 401
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+                
+    return jsonify({
+        "apikey": api_key
+    })
 
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["PUT"])
@@ -89,10 +118,10 @@ def get_order_by_id(buyerId, orderId):
 
         return jsonify(order), 200
     
-    except Exception as r:
+    except Exception as e:
         return jsonify({
             "status": 500,
-            "error": str(r)
+            "error": str(e)
         }), 500
 
 
