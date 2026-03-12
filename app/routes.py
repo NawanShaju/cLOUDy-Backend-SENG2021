@@ -10,6 +10,7 @@ from .utils.helper import to_iso_date
 from .services.orderdb import update_order_service
 from .services.orderdb import cancel_order_service
 from .services.orderdb import get_full_order_db
+from utils.helper import is_valid_uuid
 from database.PostgresDB import PostgresDB
 
 api = Blueprint("main", __name__)
@@ -26,6 +27,9 @@ def create_order(buyerId):
     
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
+    
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
     
     data["order_date"] = to_iso_date(data.get("order_date"))
     data["delivery_date"] = to_iso_date(data.get("delivery_date"))
@@ -53,7 +57,6 @@ def create_apiKey():
     if not data:
         return jsonify({"error": "Invalid json Provided"}), 400
     
-    
     username = data.get("username")
     password = data.get("password")
     
@@ -74,11 +77,18 @@ def create_apiKey():
 
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["PUT"])
+@validate_api_key
 def update_order(buyerId, orderId):
     data = request.get_json()
 
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
+    
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+    
+    if not is_valid_uuid(orderId):
+        return jsonify({"error": "orderId must be a valid UUID"}), 400
     
     if data.get("order_date"):
         data["order_date"] = to_iso_date(data.get("order_date"))
@@ -105,7 +115,14 @@ def update_order(buyerId, orderId):
 
 
 @api.route("v1/buyer/<buyerId>/order/<orderId>", methods = ["GET"])
+@validate_api_key
 def get_order_by_id(buyerId, orderId):
+    
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+    
+    if not is_valid_uuid(orderId):
+        return jsonify({"error": "orderId must be a valid UUID"}), 400
 
     try:
         with PostgresDB() as db:
@@ -126,7 +143,14 @@ def get_order_by_id(buyerId, orderId):
 
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>/CANCELED", methods=["DELETE"])
+@validate_api_key
 def cancel_order(buyerId, orderId):
+    
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+    
+    if not is_valid_uuid(orderId):
+        return jsonify({"error": "orderId must be a valid UUID"}), 400
     
     with PostgresDB() as db:
         result = cancel_order_service(db, buyerId, orderId)
@@ -149,7 +173,12 @@ def cancel_order(buyerId, orderId):
     return jsonify(result), 200
 
 @api.route("v1/buyer/<buyerId>/order", methods = ["GET"])
+@validate_api_key
 def get_orders_for_buyer(buyerId):
+    
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+    
     try:
         status = request.args.get("status")
         from_date = request.args.get("fromDate")

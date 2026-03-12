@@ -1,5 +1,6 @@
 from dateutil.parser import parse
 from datetime import datetime
+from uuid import UUID
 
 def to_iso_date(date_input):
     
@@ -13,3 +14,10 @@ def to_iso_date(date_input):
             raise ValueError(f"Cannot parse '{date_input}' as a valid date.")
     else:
         raise TypeError("Input must be a string or datetime object.")
+
+def is_valid_uuid(value: str) -> bool:
+    try:
+        UUID(value)
+        return True
+    except ValueError:
+        return False
