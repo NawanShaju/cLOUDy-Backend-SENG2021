@@ -129,7 +129,7 @@ def insert_product(db, items):
             %(item_description)s,
             %(unit_price)s
         )
-        ON CONFLICT (product_name, unit_price)
+        ON CONFLICT (product_name, product_description, unit_price)
         DO UPDATE SET
             product_name = EXCLUDED.product_name
         RETURNING product_id
