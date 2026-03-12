@@ -7,7 +7,7 @@ from .services.xmldb import xml_to_db
 from .services.apiKey import get_api_key
 from .services.xmldb import xml_to_db_update_delete
 from .utils.helper import to_iso_date
-from .services.orderdb import update_order_service
+from .services.orderdb import update_order_db
 from .services.orderdb import cancel_order_service
 from .services.orderdb import get_full_order_db
 from utils.helper import is_valid_uuid
@@ -97,7 +97,7 @@ def update_order(buyerId, orderId):
         data["delivery_date"] = to_iso_date(data.get("delivery_date"))
 
     with PostgresDB() as db:
-        result = update_order_service(db, buyerId, orderId, data)
+        result = update_order_db(db, data, buyerId, orderId)
         
         if not result:
             return jsonify({"error": "Order not found"}), 404

@@ -168,20 +168,19 @@ def insert_address(db, address):
         
     return db.execute_insert_update_delete(query, address)
 
-def update_order_service(db, buyerId, orderId, data):
-    result = update_order_db(db, data, buyerId, orderId)
-    return result
-
 
 def update_order_db(db, data, buyerId, orderId):
     
+    if data.get("item") and data.get("item").get("product_id"):
+        return jsonify({"error": "please provide a valid product_id"}), 400
+    
     if data.get("address"):
         address_id = update_address(db, data.get("address"), orderId)
-        data["address_id"] = address_id[0][0]
+        data["address_id"] = address_id[0]
 
-    if data.get("items"):
-        product_ids = update_order_product(db, data.get("items"))
-        update_order_items(db, orderId, data.get("items"), product_ids)
+    if data.get("item"):
+        product_id = update_order_product(db, data.get("item"))
+        update_order_items(db, orderId, data.get("item"), product_id[0][0])
 
     order = update_order_input(db, data, buyerId, orderId)
 
@@ -205,21 +204,37 @@ def update_address(db, address, orderId):
         "postal_code":  address.get("postal_code")  if address.get("postal_code")  is not None else existing[3],
         "country_code": address.get("country_code") if address.get("country_code") is not None else existing[4]
     }
-
-    query = """
-        INSERT INTO addresses (
-            street, city, state, postal_code, country_code
-        )
-        VALUES (
-            %(street)s, %(city)s, %(state)s, %(postal_code)s, %(country_code)s
-        )
-        ON CONFLICT (street, city, state, postal_code, country_code)
-        DO UPDATE SET street = EXCLUDED.street
-        RETURNING address_id
+    
+    check_query = """
+        SELECT address_id
+        FROM addresses
+        WHERE street = %(street)s
+        AND city = %(city)s
+        AND state = %(state)s
+        AND postal_code = %(postal_code)s
+        AND country_code = %(country_code)s
     """
+    
+    existing_address = db.execute_query(check_query, merged)
 
-    result = db.execute_insert_update_delete(query, merged)
-    return result
+    if existing_address:
+        address_id = existing_address
+    else:
+        query = """
+            INSERT INTO addresses (
+                street, city, state, postal_code, country_code
+            )
+            VALUES (
+                %(street)s, %(city)s, %(state)s, %(postal_code)s, %(country_code)s
+            )
+            ON CONFLICT (street, city, state, postal_code, country_code)
+            DO UPDATE SET street = EXCLUDED.street
+            RETURNING address_id
+        """
+        address_id = db.execute_insert_update_delete(query, merged)
+        
+    return address_id
+
 
 def update_order_input(db, data, buyerId, orderId):
     query = """
@@ -247,65 +262,74 @@ def update_order_input(db, data, buyerId, orderId):
     return db.execute_insert_update_delete(query, params)
 
 
-def update_order_items(db, order_id, items, product_map):
+def update_order_items(db, order_id, item, product_id):
     query = """
-        INSERT INTO order_items (
-            order_id,
-            product_id,
-            quantity,
-            total_price
-        )
-        VALUES (
-            %(order_id)s,
-            %(product_id)s,
-            %(quantity)s,
-            %(total_price)s
-        )
-        ON CONFLICT (order_id, product_id)
-        DO UPDATE SET
-            quantity    = EXCLUDED.quantity,
-            total_price = EXCLUDED.total_price
+        UPDATE order_items
+        SET
+            quantity = COALESCE(%(quantity)s, quantity),
+            total_price = COALESCE(%(total_price)s, total_price)
+        WHERE order_id = %(order_id)s
+        AND product_id = %(product_id)s
+        RETURNING order_item_id
     """
 
-    for item in items:
-        product_id = product_map[item["item_name"]]
+    if not item.get("unit_price") or not item.get("quantity"):
+        total_price = None
+    else:
+        total_price = item.get("unit_price") * item.get("quantity")
 
-        params = {
-            "order_id":    order_id,
-            "product_id":  product_id,
-            "quantity":    int(item.get("quantity")),
-            "total_price": item.get("unit_price") * item.get("quantity")
-        }
+    params = {
+        "order_id":    order_id,
+        "product_id":  product_id,
+        "quantity":    int(item["quantity"]) if item.get("quantity") is not None else None,
+        "total_price": total_price
+    }
 
-        db.execute_insert_update_delete(query, params)
+    result = db.execute_insert_update_delete(query, params)
+    
+    if not result:
+        return jsonify({"error": "Not Updated, invalid product id or order id"})
 
-def update_order_product(db, items):
-    query = """
-        INSERT INTO products (
-            product_name,
-            product_description,
-            unit_price
-        )
-        VALUES (
-            %(item_name)s,
-            %(item_description)s,
-            %(unit_price)s
-        )
-        ON CONFLICT (product_name, unit_price)
-        DO UPDATE SET
-            product_name        = EXCLUDED.product_name,
-            product_description = EXCLUDED.product_description,
-            unit_price          = EXCLUDED.unit_price
-        RETURNING product_id
-    """
 
-    product_map = {}
+def update_order_product(db, item):
+    
+    check_query = """
+        SELECT product_id
+        FROM products
+        WHERE product_name = %(item_name)s
+        AND unit_price = %(unit_price)s
+        AND product_description = %(item_description)s
+        AND product_id != %(product_id)s
+    """    
+    
+    params = {
+        "item_name": item.get("item_name"),
+        "item_description": item.get("item_description"),
+        "unit_price": item.get("unit_price"),
+        "product_id": item.get("product_id")
+    }
+    
+    product_id = db.execute_query(check_query, params)
+    
+    if not product_id:
+        query = """
+            UPDATE products
+            SET
+                product_name = COALESCE(%(item_name)s, product_name),
+                product_description = COALESCE(%(item_description)s, product_description),
+                unit_price = COALESCE(%(unit_price)s, unit_price),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE product_id = %(product_id)s
+            RETURNING product_id
+        """
 
-    for item in items:
-        result = db.execute_insert_update_delete(query, item)
-        product_map[item["item_name"]] = result[0]
+        product_id = db.execute_insert_update_delete(query, params)
 
-    return product_map
+        if not product_id:
+            return jsonify({"error": "The product id provided is invalid"}), 400
+
+    return product_id
+
 
 def get_full_order_db(db, buyer_id, order_id):
     query = """
@@ -389,7 +413,6 @@ def get_order_db(db, buyer_id, order_id):
     query = """
         SELECT * FROM orders
         WHERE order_id = %(order_id)s
-        AND external_buyer_id = %(buyer_id)s
     """
     params = {
         "order_id": order_id,
