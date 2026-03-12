@@ -49,6 +49,90 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerError'
+  
+    get:
+      summary: Get orders for a buyer
+      description: Retrieve a paginated list of orders for a specific buyer with optional filtering.
+      parameters:
+        - name: buyerId
+          in: path
+          required: true
+          description: Unique buyer identifier
+          schema:
+            type: string
+
+        - name: status
+          in: query
+          required: false
+          description: Filter orders by status
+          schema:
+            type: string
+            example: CREATED
+
+        - name: fromDate
+          in: query
+          required: false
+          description: Filter orders from this date
+          schema:
+            type: string
+            format: date
+            example: "2026-03-01"
+
+        - name: toDate
+          in: query
+          required: false
+          description: Filter orders up to this date
+          schema:
+            type: string
+            format: date
+            example: "2026-03-10"
+
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results returned
+          schema:
+            type: integer
+            default: 10
+            example: 10
+
+        - name: offset
+          in: query
+          required: false
+          description: Offset for pagination
+          schema:
+            type: integer
+            default: 0
+            example: 0
+
+      responses:
+        "200":
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrdersListResponse'
+
+        "400":
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+
+        "404":
+          description: Buyer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
 
   /v1/buyer/{buyerId}/order/{orderId}:
     get:
@@ -242,3 +326,68 @@ components:
         error:
           type: string
           example: "Internal server error"
+
+    OrdersListResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+
+        message:
+          type: string
+          example: "All orders for a buyer"
+
+        buyerId:
+          type: string
+          example: "70f4810c-5904-454c-8b35-2876e01d9b08"
+
+        count:
+          type: integer
+          example: 2
+
+        limit:
+          type: integer
+          example: 10
+
+        offset:
+          type: integer
+          example: 0
+
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSummary'
+
+    OrderSummary:
+      type: object
+      properties:
+        orderId:
+          type: string
+          example: "ca21f797-379a-4e27-a703-4992c5ea46fa"
+
+        orderDate:
+          type: string
+          format: date
+          example: "2026-03-07"
+
+        deliveryDate:
+          type: string
+          format: date
+          example: "2026-03-10"
+
+        currencyCode:
+          type: string
+          example: "AUD"
+
+        itemCount:
+          type: integer
+          example: 2
+
+        totalAmount:
+          type: string
+          example: "150.00"
+
+        status:
+          type: string
+          example: "CREATED"
