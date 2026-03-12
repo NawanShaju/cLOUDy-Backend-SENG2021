@@ -168,8 +168,6 @@ def insert_address(db, address):
         
     return db.execute_insert_update_delete(query, address)
 
-
-
 def update_order_service(db, buyerId, orderId, data):
     result = update_order_db(db, data, buyerId, orderId)
     return result
@@ -409,3 +407,77 @@ def cancel_order_input(db, order_id):
     """
     params = {"order_id": order_id}
     db.execute_insert_update_delete(query, params)
+
+def get_orders_for_buyer_db(db, buyerId, status=None, from_date=None, to_date=None, limit=10, offset=0):
+    buyer_check_query = """
+        SELECT 1
+        FROM orders
+        WHERE external_buyer_id = %(buyer_id)s
+        LIMIT 1
+    """
+
+    buyer_exists = db.execute_query(buyer_check_query, {"buyer_id": buyerId})
+
+    if not buyer_exists:
+        return None
+    
+    query = """
+       SELECT
+            o.order_id,
+            o.status,
+            o.order_date,
+            o.delivery_date,
+            o.currency_code,
+            COUNT(oi.order_item_id) AS item_count,
+            COALESCE(SUM(oi.total_price), 0) AS total_amount
+        FROM orders o
+        LEFT JOIN order_items oi
+            ON o.order_id = oi.order_id
+        WHERE o.external_buyer_id = %(buyer_id)s
+    """
+
+    params = {
+        "buyer_id": buyerId,
+        "limit": limit,
+        "offset": offset
+    }
+
+    if status:
+        query += " AND UPPER(o.status) = UPPER(%(status)s)"
+        params["status"] = status.strip()
+
+    if from_date:
+        query += " AND o.order_date >= %(from_date)s::date"
+        params["from_date"] = from_date
+
+    if to_date:
+        query += " AND o.order_date <= %(to_date)s::date"
+        params["to_date"] = to_date
+
+    query += """
+        GROUP BY
+            o.order_id,
+            o.status,
+            o.order_date,
+            o.delivery_date,
+            o.currency_code
+        ORDER BY o.order_date DESC, o.order_id
+        LIMIT %(limit)s
+        OFFSET %(offset)s
+    """
+    results = db.execute_query(query, params, fetch_all=True)
+
+    orders = []
+
+    for row in results:
+        orders.append({
+            "orderId": str(row[0]),
+            "status": row[1],
+            "orderDate": row[2].isoformat() if row[2] else None,
+            "deliveryDate": row[3].isoformat() if row[3] else None,
+            "currencyCode": row[4],
+            "itemCount": row[5],
+            "totalAmount": str(row[6]) if row[6] is not None else "0"
+        })
+
+    return orders
