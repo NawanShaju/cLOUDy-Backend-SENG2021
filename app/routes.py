@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, Response
-from .services.validate_order import validate_order
+from .services.validate_order import validate_order, validate_order_xml
 from .services.xmlGeneration import generate_xml
 from .services.apiKey import validate_api_key
 from .services.orderdb import create_order_db, get_order_details, get_orders_for_buyer_db
@@ -215,3 +215,18 @@ def get_orders_for_buyer(buyerId):
             "status": 500,
             "error": str(e)
         }), 500
+        
+@api.route('v1/validate-xml', methods=['POST'])
+def validate_xml():
+    try:
+        xml_data = request.data.decode("utf-8")
+        
+        if not xml_data:
+            return jsonify({"valid": False, "errors": ["Missing XML payload"]}), 400
+        
+        valid, errors = validate_order_xml(xml_data)
+
+        return jsonify({"valid": valid, "errors": errors}), 200 if valid else 400
+
+    except Exception as e:
+        return jsonify({"valid": False, "errors": [str(e)]}), 500
