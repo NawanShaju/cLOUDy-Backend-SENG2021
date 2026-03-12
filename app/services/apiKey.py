@@ -1,3 +1,4 @@
+from database.PostgresDB import PostgresDB
 from functools import wraps
 from flask import request, jsonify
 import secrets
@@ -19,10 +20,12 @@ def verify_password(password, hashed_password):
 def get_api_key(db, username, password):
     
     if not username:
-        return jsonify({"error": "Please provide a valid username"}), 400
+        raise ValueError("Please provide a valid username")
         
     if not password:
-        return jsonify({"error": "Please provide a valid password"}), 400
+        raise ValueError("Please provide a valid password")
+
+    username = username.lower()
     
     query = """
         SELECT api_key, password
@@ -30,12 +33,9 @@ def get_api_key(db, username, password):
         WHERE username = %s
     """
     
-    api_key, hashed_password = db.execute_query(query, (username,))
-
-    if not verify_password(password, hashed_password): 
-        return jsonify({"error": "the password is incorrect"}), 401
+    result = db.execute_query(query, (username,))
     
-    if not api_key:
+    if not result:
         api_key = "ubl_sk_" + secrets.token_hex(24)
         password = hash_password(password)
         
@@ -58,24 +58,35 @@ def get_api_key(db, username, password):
             "api_key": api_key
         }
         
-        # db.execute_insert_update_delete(insert_query, insert_params)
+        db.execute_insert_update_delete(insert_query, insert_params)
+    else:
+        api_key, hashed_password = result
+        
+        if not verify_password(password, hashed_password): 
+            raise PermissionError("The password is incorrect")
         
     return api_key
     
 
-# def require_api_key(f):
+def validate_api_key(f):
 
-#     @wraps(f)
-#     def decorated(*args, **kwargs):
+    @wraps(f)
+    def decorated(*args, **kwargs):
 
-#         api_key = request.headers.get("x-api-key")
+        api_key = request.headers.get("api-key")
 
-#         if not api_key or api_key not in VALID_API_KEYS:
-#             return jsonify({
-#                 "status": 401,
-#                 "error": "Unauthorized"
-#             }), 401
+        query = """
+            SELECT api_key
+            FROM clients
+            where api_key = %s
+        """
+        
+        with PostgresDB() as db:
+            key_is_valid = db.execute_query(query, (api_key, ))
 
-#         return f(*args, **kwargs)
+        if not key_is_valid:
+            return jsonify({"error": "Unauthorized"}), 401
 
-#     return decorated
+        return f(*args, **kwargs)
+
+    return decorated
