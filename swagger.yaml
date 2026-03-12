@@ -1,13 +1,61 @@
 openapi: 3.0.0
 info:
   title: Buyer Order API
-  description: API for creating and retrieving buyer orders
   version: 1.0.0
+  description: |
+    API for creating and retrieving buyer orders.
+
+    🔐 Authentication
+    All endpoints except `/create-key` require an API key.
+
+    To obtain an API key:
+    1. Call **POST /create-key** with your username and password
+    2. Copy the returned key
+    3. Send it in the header:
+
+    api-key: YOUR_API_KEY
 
 servers:
   - url: http://localhost:5000
 
+security:
+  - ApiKeyAuth: []
+
 paths:
+  /create-key:
+    post:
+      security: []
+      summary: Generate API key
+      description: Authenticate a user and generate an API key.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiKeyRequest'
+
+      responses:
+        "200":
+          description: API key generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+
   /v1/buyer/{buyerId}/order:
     post:
       summary: Create a new order
@@ -16,7 +64,6 @@ paths:
         - name: buyerId
           in: path
           required: true
-          description: Unique buyer identifier
           schema:
             type: string
 
@@ -43,13 +90,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
 
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+
         "500":
           description: Server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerError'
-  
+
     get:
       summary: Get orders for a buyer
       description: Retrieve a paginated list of orders for a specific buyer with optional filtering.
@@ -94,7 +148,6 @@ paths:
           schema:
             type: integer
             default: 10
-            example: 10
 
         - name: offset
           in: query
@@ -103,9 +156,9 @@ paths:
           schema:
             type: integer
             default: 0
-            example: 0
 
       responses:
+
         "200":
           description: Orders retrieved successfully
           content:
@@ -114,11 +167,18 @@ paths:
                 $ref: '#/components/schemas/OrdersListResponse'
 
         "400":
-          description: Invalid request parameters
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
 
         "404":
           description: Buyer not found
@@ -142,14 +202,12 @@ paths:
         - name: buyerId
           in: path
           required: true
-          description: Unique buyer identifier
           schema:
             type: string
 
         - name: orderId
           in: path
           required: true
-          description: Unique order identifier
           schema:
             type: string
 
@@ -160,6 +218,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrderResponse'
+
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
 
         "404":
           description: Order not found
@@ -176,7 +241,32 @@ paths:
                 $ref: '#/components/schemas/ServerError'
 
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: api-key
+
   schemas:
+    CreateApiKeyRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: "john_doe"
+        password:
+          type: string
+          example: "password123"
+
+    ApiKeyResponse:
+      type: object
+      properties:
+        apikey:
+          type: string
+          example: "b7c4c5e8a9d34f6c9b8e21d7a4f12345"
 
     OrderRequest:
       type: object
@@ -253,7 +343,7 @@ components:
         item_name:
           type: string
           example: "Steel Bolt"
-
+          
         item_description:
           type: string
           example: "High-strength steel bolt"
@@ -297,43 +387,13 @@ components:
           description: XML representation of the order
           example: "<order><id>123</id></order>"
 
-    BadRequestError:
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 400
-        error:
-          type: string
-          example: "Invalid Json Provided"
-
-    NotFoundError:
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 404
-        error:
-          type: string
-          example: "Order couldnt be found"
-
-    ServerError:
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 500
-        error:
-          type: string
-          example: "Internal server error"
-
     OrdersListResponse:
       type: object
       properties:
         status:
           type: integer
           example: 200
-
+                    
         message:
           type: string
           example: "All orders for a buyer"
@@ -391,3 +451,44 @@ components:
         status:
           type: string
           example: "CREATED"
+          
+    BadRequestError:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+
+    NotFoundError:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+
+    ServerError:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+
+    InvalidApiKeyError:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 401
+        error:
+          type: string
+          example: "API key is missing or invalid"
+
+    UnauthorizedError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid username or password"
