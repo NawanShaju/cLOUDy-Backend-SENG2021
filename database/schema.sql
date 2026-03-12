@@ -20,7 +20,7 @@ CREATE TABLE products (
     unit_price NUMERIC(12,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_product UNIQUE (product_name, unit_price)
+    CONSTRAINT unique_product UNIQUE (product_name, product_description, unit_price)
 );
 
 -- =========================================
@@ -63,7 +63,7 @@ CREATE TABLE order_items (
     order_id UUID NOT NULL,
     product_id UUID,
     quantity INTEGER,
-    total_price INTEGER,
+    total_price NUMERIC(12,2) NOT NULL,
 
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
