@@ -242,6 +242,7 @@ paths:
 
   /v1/validate-xml:
     post:
+      security: []
       summary: Validate order XML
       description: Validate an order XML document against the system rules.
 

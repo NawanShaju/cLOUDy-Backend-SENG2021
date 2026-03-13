@@ -2,18 +2,33 @@ from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order, validate_order_xml
 from .services.xmlGeneration import generate_xml
 from .services.apiKey import validate_api_key
-from .services.orderdb import create_order_db, get_order_details, get_orders_for_buyer_db
+from .services.orderdb import (create_order_db, 
+                               get_order_details, 
+                               get_orders_for_buyer_db, 
+                               update_order_db, 
+                               cancel_order_service, 
+                               get_full_order_db
+)
 from .services.xmldb import xml_to_db
 from .services.apiKey import get_api_key
 from .services.xmldb import xml_to_db_update_delete
 from .utils.helper import to_iso_date
-from .services.orderdb import update_order_db
-from .services.orderdb import cancel_order_service
-from .services.orderdb import get_full_order_db
 from app.utils.helper import is_valid_uuid
 from database.PostgresDB import PostgresDB
+from flask import send_from_directory
+from flask_swagger_ui import get_swaggerui_blueprint
+import os
 
 api = Blueprint("main", __name__)
+
+SWAGGER_URL = "/swagger"
+API_URL = "/swagger.yaml"
+
+swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={"app_name": "Order API"}
+)
 
 @api.route("/health", methods=["GET"])
 def health_check():
@@ -259,3 +274,9 @@ def validate_xml():
 
     except Exception as e:
         return jsonify({"valid": False, "errors": [str(e)]}), 500
+    
+def register_swagger_yaml(app):
+    @app.route("/swagger.yaml")
+    def swagger_spec():
+        parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        return send_from_directory(parent_dir, "swagger.yaml")
