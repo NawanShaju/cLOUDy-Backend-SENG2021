@@ -99,6 +99,9 @@ def update_order(buyerId, orderId):
     with PostgresDB() as db:
         result = update_order_db(db, data, buyerId, orderId)
         
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+    
         if not result:
             return jsonify({"error": "Order not found"}), 404
         
