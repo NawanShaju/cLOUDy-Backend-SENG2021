@@ -12,5 +12,8 @@ dependencies = [
     "flask-sqlalchemy>=3.1.1",
     "lxml>=6.0.2",
     "psycopg2-binary>=2.9.11",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "pytest-mock>=3.15.1",
     "python-dotenv>=1.2.2",
 ]
