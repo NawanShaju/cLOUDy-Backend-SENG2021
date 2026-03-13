@@ -19,7 +19,7 @@ api = Blueprint("main", __name__)
 def health_check():
     return jsonify({"status": "running"}), 200
 
-@api.route("v1/buyer/<buyerId>/order", methods=["POST"])
+@api.route("/v1/buyer/<buyerId>/order", methods=["POST"])
 @validate_api_key
 def create_order(buyerId):
     
@@ -114,7 +114,7 @@ def update_order(buyerId, orderId):
     )
 
 
-@api.route("v1/buyer/<buyerId>/order/<orderId>", methods = ["GET"])
+@api.route("/v1/buyer/<buyerId>/order/<orderId>", methods = ["GET"])
 @validate_api_key
 def get_order_by_id(buyerId, orderId):
     
@@ -172,7 +172,7 @@ def cancel_order(buyerId, orderId):
 
     return jsonify(result), 200
 
-@api.route("v1/buyer/<buyerId>/order", methods = ["GET"])
+@api.route("/v1/buyer/<buyerId>/order", methods = ["GET"])
 @validate_api_key
 def get_orders_for_buyer(buyerId):
     
@@ -245,7 +245,7 @@ def get_orders_for_buyer(buyerId):
             "error": str(e)
         }), 500
         
-@api.route('v1/validate-xml', methods=['POST'])
+@api.route('/v1/validate-xml', methods=['POST'])
 def validate_xml():
     try:
         xml_data = request.data.decode("utf-8")
