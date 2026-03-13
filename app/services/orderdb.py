@@ -405,7 +405,7 @@ def cancel_order_db(db, buyer_id, order_id):
     return {
         "orderId": order_id,
         "status": "CANCELED",
-        "message": "Order deleted successfully"
+        "message": "Order canceled successfully"
     }
 
 
@@ -504,3 +504,56 @@ def get_orders_for_buyer_db(db, buyerId, status=None, from_date=None, to_date=No
         })
 
     return orders
+
+def delete_order_service(db, buyer_id, order_id):
+    result = delete_order_db(db, buyer_id, order_id)
+    return result
+
+
+def delete_order_db(db, buyer_id, order_id):
+    order = get_order_db(db, buyer_id, order_id)
+
+    if not order:
+        return {"status": 404, "error": "Order not found"}
+
+    if order[1] != buyer_id:
+        return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
+
+    if order[6] != "CANCELED":
+        return {"status": 409, "error": "Order cannot be deleted unless status is CANCELED"}
+
+    delete_order_documents(db, order_id)
+    delete_order_items(db, order_id)
+    delete_order_input(db, order_id)
+
+    return {
+        "orderId": order_id,
+        "message": "Order deleted successfully"
+    }
+
+
+def delete_order_documents(db, order_id):
+    query = """
+        DELETE FROM order_documents
+        WHERE order_id = %(order_id)s
+    """
+    params = {"order_id": order_id}
+    db.execute_insert_update_delete(query, params)
+
+
+def delete_order_items(db, order_id):
+    query = """
+        DELETE FROM order_items
+        WHERE order_id = %(order_id)s
+    """
+    params = {"order_id": order_id}
+    db.execute_insert_update_delete(query, params)
+
+
+def delete_order_input(db, order_id):
+    query = """
+        DELETE FROM orders
+        WHERE order_id = %(order_id)s
+    """
+    params = {"order_id": order_id}
+    db.execute_insert_update_delete(query, params)
