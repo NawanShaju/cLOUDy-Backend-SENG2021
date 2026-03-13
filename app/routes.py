@@ -10,7 +10,8 @@ from .utils.helper import to_iso_date
 from .services.orderdb import update_order_service
 from .services.orderdb import cancel_order_service
 from .services.orderdb import get_full_order_db
-from utils.helper import is_valid_uuid
+from .services.orderdb import delete_order_service
+from .utils.helper import is_valid_uuid
 from database.PostgresDB import PostgresDB
 
 api = Blueprint("main", __name__)
@@ -259,3 +260,34 @@ def validate_xml():
 
     except Exception as e:
         return jsonify({"valid": False, "errors": [str(e)]}), 500
+
+
+@api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["DELETE"])
+@validate_api_key
+def delete_order(buyerId, orderId):
+
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+
+    if not is_valid_uuid(orderId):
+        return jsonify({"error": "orderId must be a valid UUID"}), 400
+
+    with PostgresDB() as db:
+        result = delete_order_service(db, buyerId, orderId)
+
+    if result.get("status") == 401:
+        return jsonify(result), 401
+
+    if result.get("status") == 404:
+        return jsonify(result), 404
+
+    if result.get("status") == 403:
+        return jsonify(result), 403
+
+    if result.get("status") == 409:
+        return jsonify(result), 409
+
+    if result.get("status") == 500:
+        return jsonify(result), 500
+
+    return jsonify(result), 200
