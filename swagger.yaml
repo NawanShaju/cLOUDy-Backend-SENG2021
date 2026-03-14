@@ -16,7 +16,7 @@ info:
     api-key: YOUR_API_KEY
 
 servers:
-  - url: http://localhost:5000
+  - url: http://44.197.195.61:5001
 
 security:
   - ApiKeyAuth: []
