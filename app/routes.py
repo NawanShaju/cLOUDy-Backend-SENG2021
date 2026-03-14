@@ -7,7 +7,8 @@ from .services.orderdb import (create_order_db,
                                get_orders_for_buyer_db, 
                                update_order_db, 
                                cancel_order_service, 
-                               get_full_order_db
+                               get_full_order_db,
+                               delete_buyers_all_cancelled_orders_service
 )
 from .services.xmldb import xml_to_db
 from .services.apiKey import get_api_key
@@ -190,6 +191,7 @@ def cancel_order(buyerId, orderId):
 
     return jsonify(result), 200
 
+
 @api.route("/v1/buyer/<buyerId>/order", methods = ["GET"])
 @validate_api_key
 def get_orders_for_buyer(buyerId):
@@ -262,7 +264,8 @@ def get_orders_for_buyer(buyerId):
             "status": 500,
             "error": str(e)
         }), 500
-        
+
+
 @api.route('/v1/validate-xml', methods=['POST'])
 def validate_xml():
     try:
@@ -278,6 +281,37 @@ def validate_xml():
     except Exception as e:
         return jsonify({"valid": False, "errors": [str(e)]}), 500
     
+
+@api.route("/v1/buyer/<buyerId>/order/CANCELED", methods=["DELETE"])
+@validate_api_key
+def delete_cancelled_orders(buyerId):
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+
+    with PostgresDB() as db:
+        result = delete_buyers_all_cancelled_orders_service(db, buyerId)
+   
+    if result.get("status") == 401:
+        return jsonify(result), 401
+
+    if result.get("status") == 404:
+        return jsonify(result), 404
+
+    if result.get("status") == 403:
+        return jsonify(result), 403
+
+    if result.get("status") == 409:
+        return jsonify(result), 409
+
+    if result.get("status") == 500:
+        return jsonify(result), 500
+
+    return jsonify({
+        "buyerId": buyerId,
+        "message": "All canceled orders deleted successfully"
+    }), 200
+
+
 def register_swagger_yaml(app):
     @app.route("/swagger.yaml")
     def swagger_spec():
