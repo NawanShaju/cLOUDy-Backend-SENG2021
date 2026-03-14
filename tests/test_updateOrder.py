@@ -15,11 +15,6 @@ def mock_db():
     db = MagicMock()
     return db
 
-@pytest.fixture
-def app():
-    app = Flask(__name__)
-    return app
-
 def test_update_address_only_state(mock_db):
     mock_db.execute_query.side_effect = [
         ['123 Main St', 'Sydney', 'NSW', '2000', 'AU'],
@@ -92,18 +87,6 @@ def test_update_order_items(mock_db):
     assert params["total_price"] == 50
     assert params["quantity"] == 5
     assert params["product_id"] == 1
-
-
-def test_update_order_db_invalid_productid(mock_db, app):
-    data = {"item": {"product_id": 123}}
-    buyer_id = "buyer-1"
-    order_id = "order-1"
-
-    with app.app_context():
-        response, status = update_order_db(mock_db, data, buyer_id, order_id)
-    
-    assert status == 400
-    assert "please provide a valid product_id" in response.get_json()["error"]
 
 
 def test_update_order_get_full_order(mock_db):

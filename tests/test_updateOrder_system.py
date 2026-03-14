@@ -17,15 +17,11 @@ class DummyDB:
             return [[1]] 
         elif "orders o" in query:
             return [(
-                "2026-03-07",
+                "2026-03-07", 
                 "2026-03-10",
-                "AUD",
+                "AUD",  
                 "UPDATED",
-                "123 Main St",
-                "City",
-                "State",
-                "12345",
-                "AU",
+                "123 Main St", "City", "State", "2000", "AU",
                 [{"item_name": "Steel Bolt", "item_description": "desc", "unit_price": 10, "quantity": 5}]
             )]
         return None
@@ -62,7 +58,7 @@ def valid_uuid():
     return str(uuid.uuid4())
 
 
-def test_update_order_success(monkeypatch, client):
+def test_update_order(monkeypatch, client):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
     monkeypatch.setattr("app.routes.update_order_db", lambda db, data, b, o: True)
     monkeypatch.setattr("app.routes.get_full_order_db", lambda db, b, o: {
