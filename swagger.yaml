@@ -1,32 +1,44 @@
 openapi: 3.0.0
+
 info:
-  title: Buyer Order API
+  title: cLOUDy UBL Ordering
   version: 1.0.0
   description: |
-    API for creating and retrieving buyer orders.
+    This is the UBL ordering API.
 
-    🔐 Authentication
+    🔐 Authentication  
     All endpoints except `/create-key` require an API key.
 
     To obtain an API key:
-    1. Call **POST /create-key** with your username and password
+    1. Call **POST /create-key**
     2. Copy the returned key
-    3. Send it in the header:
+    3. Send it in requests:
 
     api-key: YOUR_API_KEY
 
 servers:
-  - url: http://44.197.195.61:5001
+  - url: http://44.197.195.61:5001/api
 
 security:
   - ApiKeyAuth: []
 
+tags:
+  - name: Auth
+    description: Operations for authentication
+  - name: Orders
+    description: Operations about the orders
+  - name: Validation
+    description: Operations for XML validation
+
 paths:
+
   /create-key:
     post:
+      tags:
+        - Auth
       security: []
       summary: Generate API key
-      description: Authenticate a user and generate an API key.
+      description: Authenticate a user and generate an API key. If user already registered returns their key.
       requestBody:
         required: true
         content:
@@ -56,10 +68,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
 
+
   /v1/buyer/{buyerId}/order:
+
     post:
-      summary: Create a new order
-      description: Creates an order for a buyer and returns generated XML.
+      tags:
+        - Orders
+      summary: Create order
+      description: Creates an order for a buyer and returns the generated UBL XML.
       parameters:
         - name: buyerId
           in: path
@@ -104,21 +120,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
+
     get:
-      summary: Get orders for a buyer
-      description: Retrieve a paginated list of orders for a specific buyer with optional filtering.
+      tags:
+        - Orders
+      summary: List orders for a buyer
+      description: Retrieve a paginated list of orders for a buyer.
       parameters:
+
         - name: buyerId
           in: path
           required: true
-          description: Unique buyer identifier
           schema:
             type: string
 
         - name: status
           in: query
           required: false
-          description: Filter orders by status
           schema:
             type: string
             example: CREATED
@@ -126,7 +144,6 @@ paths:
         - name: fromDate
           in: query
           required: false
-          description: Filter orders from this date
           schema:
             type: string
             format: date
@@ -135,7 +152,6 @@ paths:
         - name: toDate
           in: query
           required: false
-          description: Filter orders up to this date
           schema:
             type: string
             format: date
@@ -144,7 +160,6 @@ paths:
         - name: limit
           in: query
           required: false
-          description: Maximum number of results returned
           schema:
             type: integer
             default: 10
@@ -152,13 +167,11 @@ paths:
         - name: offset
           in: query
           required: false
-          description: Offset for pagination
           schema:
             type: integer
             default: 0
 
       responses:
-
         "200":
           description: Orders retrieved successfully
           content:
@@ -194,11 +207,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
+
   /v1/buyer/{buyerId}/order/{orderId}:
+
     get:
+      tags:
+        - Orders
       summary: Get order by ID
       description: Retrieve a specific order for a buyer.
       parameters:
+
         - name: buyerId
           in: path
           required: true
@@ -240,11 +258,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
-  /v1/validate-xml:
+
+  /validate-xml:
     post:
+      tags:
+        - Validation
       security: []
-      summary: Validate order XML
-      description: Validate an order XML document against the system rules.
+      summary: Validate XML
+      description: Validate an order XML document.
 
       requestBody:
         required: true
@@ -269,19 +290,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/XmlValidationError'
 
-        "401":
-          description: Invalid or missing API key
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvalidApiKeyError'
-
         "500":
           description: Server error during validation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerError'
+
 
 components:
   securitySchemes:
