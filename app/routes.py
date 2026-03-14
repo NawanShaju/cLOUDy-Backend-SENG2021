@@ -277,3 +277,9 @@ def validate_xml():
 
     except Exception as e:
         return jsonify({"valid": False, "errors": [str(e)]}), 500
+    
+def register_swagger_yaml(app):
+    @app.route("/swagger.yaml")
+    def swagger_spec():
+        parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        return send_from_directory(parent_dir, "swagger.yaml")
