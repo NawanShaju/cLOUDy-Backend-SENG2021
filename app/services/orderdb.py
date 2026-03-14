@@ -390,10 +390,7 @@ def cancel_order_db(db, buyer_id, order_id):
     
     if not order:
         return {"status": 404, "error": "Order not found"}
-    print("here")
-    print(order)
-    print(order[1])
-    print(buyer_id)
+    order = order[0]
     if order[1] != buyer_id:
         return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
 
