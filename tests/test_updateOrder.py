@@ -1,11 +1,13 @@
 import pytest
 from unittest.mock import MagicMock
+from flask import Flask
 from app.services.orderdb import (
     update_order_db,
     update_address,
     update_order_input,
     update_order_product,
-    update_order_items
+    update_order_items,
+    get_full_order_db
 )
 
 @pytest.fixture
@@ -85,3 +87,27 @@ def test_update_order_items(mock_db):
     assert params["total_price"] == 50
     assert params["quantity"] == 5
     assert params["product_id"] == 1
+
+
+def test_update_order_get_full_order(mock_db):
+    from datetime import datetime
+    order_date = datetime(2026, 3, 7)
+    delivery_date = datetime(2026, 3, 10)
+
+    row = [order_date, delivery_date, 'AUD', 'CREATED', '123 St', 'Sydney', 'NSW', '2000', 'AU', [{"item_name": "Bolt", "quantity": 2}]]
+    mock_db.execute_query.return_value = row
+
+    result = get_full_order_db(mock_db, '70f4810c-5904-454c-8b35-2876e01d9b08', 'f5b163a5-b189-4666-8666-9527705b6ce9')
+
+    assert result["order_date"] == order_date.isoformat()
+    assert result["delivery_date"] == delivery_date.isoformat()
+    assert result["currency_code"] == 'AUD'
+    assert result["status"] == 'CREATED'
+    assert result["address"]["city"] == 'Sydney'
+    assert result["items"][0]["item_name"] == "Bolt"
+
+
+def test_update_order_none(mock_db):
+    mock_db.execute_query.return_value = None
+    result = get_full_order_db(mock_db, '70f4810c-5904-454c-8b35-2876e01d9b08', 'f5b163a5-b189-4666-8666-9527705b6ce9')
+    assert result is None
