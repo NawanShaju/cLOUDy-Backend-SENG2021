@@ -18,13 +18,18 @@ def get_order_details(db, buyerId, orderId):
     query = """
         SELECT
             o.order_id,
+            o.status,
             oi.product_id,
+            p.product_name,
+            p.product_description,
+            p.unit_price,
             oi.quantity,
-            oi.total_price,
-            o.status
+            oi.total_price
         FROM orders o
         JOIN order_items oi
             ON o.order_id = oi.order_id
+        LEFT JOIN products p
+            ON oi.product_id = p.product_id
         WHERE o.order_id = %(order_id)s
           AND o.external_buyer_id = %(buyer_id)s
     """
@@ -33,23 +38,31 @@ def get_order_details(db, buyerId, orderId):
         "order_id": orderId,
         "buyer_id": buyerId
     }
-    
-    result = db.execute_query(query, params)
 
-    if not result:
+    results = db.execute_query(query, params, fetch_all=True)
+
+    if not results:
         return None
-    
+
     xml_content = get_order_xml(db, orderId)
-    
+
     if not xml_content:
         return None
 
     return {
-        "orderId": str(result[0]),
-        "productId": str(result[1]) if result[1] is not None else None,
-        "quantity": result[2],
-        "money": result[3],
-        "status": result[4],
+        "orderId": str(results[0][0]),
+        "status": results[0][1],
+        "items": [
+            {
+                "productId": str(row[2]) if row[2] is not None else None,
+                "productName": row[3],
+                "productDescription": row[4],
+                "unitPrice": str(row[5]) if row[5] is not None else None,
+                "quantity": row[6],
+                "totalPrice": str(row[7]) if row[7] is not None else None
+            }
+            for row in results
+        ],
         "xml": xml_content
     }
 
@@ -390,10 +403,7 @@ def cancel_order_db(db, buyer_id, order_id):
     
     if not order:
         return {"status": 404, "error": "Order not found"}
-    print("here")
-    print(order)
-    print(order[1])
-    print(buyer_id)
+    order = order[0]
     if order[1] != buyer_id:
         return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
 
