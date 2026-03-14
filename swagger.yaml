@@ -17,7 +17,7 @@ info:
     api-key: YOUR_API_KEY
 
 servers:
-  - url: http://44.197.195.61:5001/v1
+  - url: http://44.197.195.61:5001/api
 
 security:
   - ApiKeyAuth: []
@@ -69,7 +69,7 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
 
 
-  /buyer/{buyerId}/order:
+  /v1/buyer/{buyerId}/order:
 
     post:
       tags:
@@ -208,7 +208,7 @@ paths:
                 $ref: '#/components/schemas/ServerError'
 
 
-  /buyer/{buyerId}/order/{orderId}:
+  /v1/buyer/{buyerId}/order/{orderId}:
 
     get:
       tags:
