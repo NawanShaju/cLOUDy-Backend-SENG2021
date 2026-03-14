@@ -47,6 +47,7 @@ def xml_to_db_update_delete(db, xml, order_id):
     }
 
     db.execute_insert_update_delete(query, params)
+    
 def get_order_xml(db, order_id):
     query = """
         SELECT xml_content
