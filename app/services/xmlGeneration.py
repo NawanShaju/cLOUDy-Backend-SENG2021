@@ -39,14 +39,14 @@ def generate_xml(data, orderId, buyerId):
     seller_name.text = data.get("supplier")
 
     # Order
-    order = etree.SubElement(root, "Order")
+    order = etree.SubElement(root, "Order_items")
     items_data = data.get("items", [])
     
     if isinstance(items_data, dict):
         items_data = [items_data]
 
     for item in items_data:
-        line = etree.SubElement(order, "Order")
+        line = etree.SubElement(order, "Order_item")
         item_name = etree.SubElement(line, "ItemName")
         item_name.text = item.get("item_name", "")
 
@@ -56,12 +56,10 @@ def generate_xml(data, orderId, buyerId):
         price = etree.SubElement(line, "Price")
         price.text = str(item.get("unit_price", 0))
 
-        # Optional description
         if "item_description" in item:
             desc = etree.SubElement(line, "ItemDescription")
             desc.text = item.get("item_description", "")
 
-    # Generate XML string
     xml_bytes = etree.tostring(
         root,
         pretty_print=True,
