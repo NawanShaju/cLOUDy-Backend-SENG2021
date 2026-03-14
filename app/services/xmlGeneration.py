@@ -1,70 +1,125 @@
 from lxml import etree
 from datetime import datetime, timezone
-
+import uuid
+ 
+# UBL 2.1 namespace declarations
+NS_ORDER = "urn:oasis:names:specification:ubl:schema:xsd:Order-2"
+NS_CAC = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+NS_CBC = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+ 
+NSMAP = {
+    None: NS_ORDER,
+    "cac": NS_CAC,
+    "cbc": NS_CBC,
+}
+ 
+def cbc(tag):
+    return f"{{{NS_CBC}}}{tag}"
+ 
+def cac(tag):
+    return f"{{{NS_CAC}}}{tag}"
+ 
+ 
 def generate_xml(data, orderId, buyerId):
-    root = etree.Element("Order")
-
-    # Order ID
-    order_id = etree.SubElement(root, "orderId")
-    order_id.text = orderId
-
-    # IssueDate
-    issue_date = etree.SubElement(root, "IssueDate")
-    issue_date.text = data.get("order_date", datetime.now(timezone.utc).date().isoformat())
-
-    # DeliveryDate
-    delivery_date = etree.SubElement(root, "DeliveryDate")
-    delivery_date.text = data.get("delivery_date", datetime.now(timezone.utc).date().isoformat())
-
-    # Currency
-    currency = etree.SubElement(root, "CurrencyCode")
-    currency.text = data.get("currency_code", "USD")
-
-    # Buyer info
-    buyer = etree.SubElement(root, "BuyerCustomerParty")
-    buyer_id = etree.SubElement(buyer, "ID")
-    buyer_id.text = buyerId
-
-    # Address
+    root = etree.Element("Order", nsmap=NSMAP)
+ 
+    etree.SubElement(root, cbc("UBLVersionID")).text = "2.1"
+    etree.SubElement(root, cbc("ID")).text = orderId
+    etree.SubElement(root, cbc("UUID")).text = str(uuid.uuid4())
+    etree.SubElement(root, cbc("IssueDate")).text = data.get(
+        "order_date", datetime.now(timezone.utc).date().isoformat()
+    )
+    etree.SubElement(root, cbc("DocumentCurrencyCode")).text = data.get(
+        "currency_code", "AUD"
+    )
+ 
+    buyer_party = etree.SubElement(root, cac("BuyerCustomerParty"))
+    buyer_party_inner = etree.SubElement(buyer_party, cac("Party"))
+ 
+    buyer_party_id = etree.SubElement(buyer_party_inner, cac("PartyIdentification"))
+    etree.SubElement(buyer_party_id, cbc("ID")).text = buyerId
+ 
     address_data = data.get("address", {})
     if address_data:
-        address_el = etree.SubElement(buyer, "Address")
-        for field in ["street", "city", "state", "postal_code", "country_code"]:
-            field_el = etree.SubElement(address_el, field.capitalize())
-            field_el.text = address_data.get(field, "")
-
-    # Seller
-    seller = etree.SubElement(root, "SellerSupplierParty")
-    seller_name = etree.SubElement(seller, "Name")
-    seller_name.text = data.get("supplier")
-
-    # Order
-    order = etree.SubElement(root, "Order_items")
+        postal = etree.SubElement(buyer_party_inner, cac("PostalAddress"))
+        if address_data.get("street"):
+            etree.SubElement(postal, cbc("StreetName")).text = address_data["street"]
+        if address_data.get("city"):
+            etree.SubElement(postal, cbc("CityName")).text = address_data["city"]
+        if address_data.get("state"):
+            etree.SubElement(postal, cbc("CountrySubentity")).text = address_data["state"]
+        if address_data.get("postal_code"):
+            etree.SubElement(postal, cbc("PostalZone")).text = address_data["postal_code"]
+        if address_data.get("country_code"):
+            country = etree.SubElement(postal, cac("Country"))
+            etree.SubElement(country, cbc("IdentificationCode")).text = address_data["country_code"]
+ 
+    seller_party = etree.SubElement(root, cac("SellerSupplierParty"))
+    seller_party_inner = etree.SubElement(seller_party, cac("Party"))
+    seller_name_el = etree.SubElement(seller_party_inner, cac("PartyName"))
+    etree.SubElement(seller_name_el, cbc("Name")).text = data.get("supplier", "")
+ 
+    delivery_date_str = data.get("delivery_date", "")
+    if delivery_date_str:
+        delivery = etree.SubElement(root, cac("Delivery"))
+        requested = etree.SubElement(delivery, cac("RequestedDeliveryPeriod"))
+        etree.SubElement(requested, cbc("EndDate")).text = delivery_date_str
+ 
+    currency_code = data.get("currency_code", "AUD")
     items_data = data.get("items", [])
-    
     if isinstance(items_data, dict):
         items_data = [items_data]
-
-    for item in items_data:
-        line = etree.SubElement(order, "Order_item")
-        item_name = etree.SubElement(line, "ItemName")
-        item_name.text = item.get("item_name", "")
-
-        quantity = etree.SubElement(line, "Quantity")
-        quantity.text = str(item.get("quantity", 0))
-
-        price = etree.SubElement(line, "Price")
-        price.text = str(item.get("unit_price", 0))
-
-        if "item_description" in item:
-            desc = etree.SubElement(line, "ItemDescription")
-            desc.text = item.get("item_description", "")
-
+ 
+    total = sum(
+        float(item.get("unit_price", 0)) * int(item.get("quantity", 0))
+        for item in items_data
+    )
+ 
+    monetary = etree.SubElement(root, cac("AnticipatedMonetaryTotal"))
+    line_ext = etree.SubElement(monetary, cbc("LineExtensionAmount"))
+    line_ext.set("currencyID", currency_code)
+    line_ext.text = f"{total:.2f}"
+    payable = etree.SubElement(monetary, cbc("PayableAmount"))
+    payable.set("currencyID", currency_code)
+    payable.text = f"{total:.2f}"
+ 
+    for idx, item in enumerate(items_data, start=1):
+        order_line = etree.SubElement(root, cac("OrderLine"))
+        line_item = etree.SubElement(order_line, cac("LineItem"))
+ 
+        etree.SubElement(line_item, cbc("ID")).text = str(idx)
+ 
+        qty = etree.SubElement(line_item, cbc("Quantity"))
+        qty.set("unitCode", item.get("unit_code", "EA"))
+        qty.text = str(item.get("quantity", 0))
+ 
+        unit_price = float(item.get("unit_price", 0))
+        quantity = int(item.get("quantity", 0))
+        line_total = unit_price * quantity
+ 
+        line_ext_amt = etree.SubElement(line_item, cbc("LineExtensionAmount"))
+        line_ext_amt.set("currencyID", currency_code)
+        line_ext_amt.text = f"{line_total:.2f}"
+ 
+        price_el = etree.SubElement(line_item, cac("Price"))
+        price_amt = etree.SubElement(price_el, cbc("PriceAmount"))
+        price_amt.set("currencyID", currency_code)
+        price_amt.text = f"{unit_price:.2f}"
+ 
+        item_el = etree.SubElement(line_item, cac("Item"))
+        if item.get("item_description"):
+            etree.SubElement(item_el, cbc("Description")).text = item["item_description"]
+        etree.SubElement(item_el, cbc("Name")).text = item.get("item_name", "")
+ 
+        if item.get("product_id"):
+            sellers_id = etree.SubElement(item_el, cac("SellersItemIdentification"))
+            etree.SubElement(sellers_id, cbc("ID")).text = item["product_id"]
+ 
     xml_bytes = etree.tostring(
         root,
         pretty_print=True,
         xml_declaration=True,
-        encoding="UTF-8"
+        encoding="UTF-8",
     )
-
+    
     return xml_bytes
