@@ -7,7 +7,7 @@ info:
     This is the UBL ordering API.
 
     🔐 Authentication  
-    All endpoints except `/create-key` require an API key.
+    All endpoints except `/create-key` and `/health` require an API key.
 
     To obtain an API key:
     1. Call **POST /create-key**
@@ -17,7 +17,7 @@ info:
     api-key: YOUR_API_KEY
 
 servers:
-  - url: http://44.197.195.61:5001/api
+  - url: http://cloudylb-504707632.us-east-1.elb.amazonaws.com/api
 
 security:
   - ApiKeyAuth: []
@@ -29,8 +29,43 @@ tags:
     description: Operations about the orders
   - name: Validation
     description: Operations for XML validation
+  - name: System
+    description: System health and monitoring
 
 paths:
+
+  /health:
+    get:
+      tags:
+        - System
+      security: []
+      summary: Health check
+      description: Returns the health status of the API service.
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  service:
+                    type: string
+                    example: "cLOUDy UBL Ordering API"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2026-03-14T15:05:00Z"
+
+        "500":
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
 
   /create-key:
     post:
@@ -297,7 +332,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
-
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -326,190 +360,6 @@ components:
           type: string
           example: "b7c4c5e8a9d34f6c9b8e21d7a4f12345"
 
-    OrderRequest:
-      type: object
-      required:
-        - order_date
-        - supplier
-        - delivery_date
-        - currency_code
-        - address
-        - items
-      properties:
-        order_date:
-          type: string
-          format: date
-          example: "2026-03-07"
-
-        supplier:
-          type: string
-          example: "cLOUDy"
-
-        delivery_date:
-          type: string
-          format: date
-          example: "2026-03-10"
-
-        currency_code:
-          type: string
-          example: "AUD"
-
-        address:
-          $ref: '#/components/schemas/Address'
-
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Item'
-
-    Address:
-      type: object
-      required:
-        - street
-        - city
-        - state
-        - postal_code
-        - country_code
-      properties:
-        street:
-          type: string
-          example: "123 Main St"
-
-        city:
-          type: string
-          example: "Sydney"
-
-        state:
-          type: string
-          example: "NSW"
-
-        postal_code:
-          type: string
-          example: "2000"
-
-        country_code:
-          type: string
-          example: "AU"
-
-    Item:
-      type: object
-      required:
-        - item_name
-        - quantity
-        - unit_price
-      properties:
-        item_name:
-          type: string
-          example: "Steel Bolt"
-          
-        item_description:
-          type: string
-          example: "High-strength steel bolt"
-
-        quantity:
-          type: integer
-          example: 50
-
-        unit_price:
-          type: number
-          format: float
-          example: 1.5
-
-    OrderResponse:
-      type: object
-      properties:
-        orderId:
-          type: string
-          example: "123"
-
-        productId:
-          type: string
-          nullable: true
-          example: "456"
-
-        quantity:
-          type: integer
-          example: 50
-
-        money:
-          type: number
-          format: float
-          example: 75.0
-
-        status:
-          type: string
-          example: "CREATED"
-
-        xml:
-          type: string
-          description: XML representation of the order
-          example: "<order><id>123</id></order>"
-
-    OrdersListResponse:
-      type: object
-      properties:
-        status:
-          type: integer
-          example: 200
-                    
-        message:
-          type: string
-          example: "All orders for a buyer"
-
-        buyerId:
-          type: string
-          example: "70f4810c-5904-454c-8b35-2876e01d9b08"
-
-        count:
-          type: integer
-          example: 2
-
-        limit:
-          type: integer
-          example: 10
-
-        offset:
-          type: integer
-          example: 0
-
-        orders:
-          type: array
-          items:
-            $ref: '#/components/schemas/OrderSummary'
-
-    OrderSummary:
-      type: object
-      properties:
-        orderId:
-          type: string
-          example: "ca21f797-379a-4e27-a703-4992c5ea46fa"
-
-        orderDate:
-          type: string
-          format: date
-          example: "2026-03-07"
-
-        deliveryDate:
-          type: string
-          format: date
-          example: "2026-03-10"
-
-        currencyCode:
-          type: string
-          example: "AUD"
-
-        itemCount:
-          type: integer
-          example: 2
-
-        totalAmount:
-          type: string
-          example: "150.00"
-
-        status:
-          type: string
-          example: "CREATED"
-          
     BadRequestError:
       type: object
       properties:
