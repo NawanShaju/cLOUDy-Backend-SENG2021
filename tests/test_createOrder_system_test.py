@@ -5,6 +5,18 @@ from lxml import etree
 
 API_HEADERS = {"api-key": "dummy-key"}
 
+NS_CAC = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+NS_CBC = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+
+
+def cbc(tag):
+    return f"{{{NS_CBC}}}{tag}"
+
+
+def cac(tag):
+    return f"{{{NS_CAC}}}{tag}"
+
+
 class DummyDB:
     def __enter__(self):
         return self
@@ -70,7 +82,7 @@ def valid_order():
     }
 
 
-# ––––––––––––––––––––––––––––––––––––––––––– invalid requests ─────────────────────────────────────────────────────────
+# ––––––––––––––––––––––––––––––––––––––––––––––– invalid requests ─────────────────────────────────────────────────────
 
 def test_create_order_invalid_buyer_id(client, valid_order):
     response = client.post(
@@ -111,7 +123,7 @@ def test_create_order_missing_items(client, valid_order):
     assert response.status_code == 400
 
 
-# ––––––––––––––––––––––––––––––––––––––––––––––––– success ────────────────────────────────────────────────────────────
+# –––––––––––––––––––––––––––––––––––––––––––––––– success ─────────────────────────────────────────────────────────────
 
 def test_create_order_success_status_code(monkeypatch, client, valid_order):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
@@ -141,7 +153,7 @@ def test_create_order_success_xml_contains_order_id(monkeypatch, client, valid_o
         headers=API_HEADERS
     )
     root = etree.fromstring(response.data)
-    assert root.findtext("orderId") is not None
+    assert root.findtext(cbc("ID")) is not None
 
 
 def test_create_order_success_xml_contains_buyer_id(monkeypatch, client, valid_order):
@@ -152,4 +164,5 @@ def test_create_order_success_xml_contains_buyer_id(monkeypatch, client, valid_o
         headers=API_HEADERS
     )
     root = etree.fromstring(response.data)
-    assert root.findtext("BuyerCustomerParty/ID") == "f5b163a5-b189-4666-8666-9527705b6ce9"
+    path = f"{cac('BuyerCustomerParty')}/{cac('Party')}/{cac('PartyIdentification')}/{cbc('ID')}"
+    assert root.findtext(path) == "f5b163a5-b189-4666-8666-9527705b6ce9"
