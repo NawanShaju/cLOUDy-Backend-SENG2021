@@ -1,10 +1,5 @@
 import pytest
 from unittest.mock import MagicMock, patch
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 from app.services.apiKey import hash_password, verify_password, get_api_key
 
 
