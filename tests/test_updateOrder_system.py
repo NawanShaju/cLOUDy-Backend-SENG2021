@@ -80,7 +80,7 @@ def test_update_order_success(monkeypatch, client):
         "items": [{"item_name": "Steel Bolt", "item_description": "desc", "unit_price": 10, "quantity": 5}]
     })
     monkeypatch.setattr("app.routes.generate_xml", lambda full_order, orderId, buyerId: "<Order>ok</Order>")
-    monkeypatch.setattr("app.routes.xml_to_db_update_delete", lambda db, xml_string, orderId: True)
+    monkeypatch.setattr("app.routes.xml_to_db_update_cancel", lambda db, xml_string, orderId: True)
 
     buyer_id = valid_uuid()
     order_id = valid_uuid()
