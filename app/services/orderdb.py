@@ -567,3 +567,35 @@ def delete_order_input(db, order_id):
     """
     params = {"order_id": order_id}
     db.execute_insert_update_delete(query, params)
+
+
+def delete_buyers_all_cancelled_orders_service(db, buyer_id):
+
+    buyer_exists_query = """
+        SELECT 1
+        FROM orders
+        WHERE external_buyer_id = %(buyer_id)s
+    """
+    buyer_exists = db.execute_query(buyer_exists_query, {"buyer_id": buyer_id})
+
+    if not buyer_exists:
+        return {"status": 404, "error": "Buyer not found"}
+
+    cancelled_orders_query = """
+        SELECT order_id
+        FROM orders
+        WHERE external_buyer_id = %(buyer_id)s
+          AND status = 'CANCELED'
+    """
+    cancelled_orders = db.execute_query(cancelled_orders_query, {"buyer_id": buyer_id}, fetch_all=True)
+
+    if not cancelled_orders:
+        return {"status": 409, "error": "No canceled orders found for this buyer"}
+
+    for row in cancelled_orders:
+        order_id = row[0]
+        delete_order_documents(db, order_id)
+        delete_order_items(db, order_id)
+        delete_order_input(db, order_id)
+
+    return {"status": 200}

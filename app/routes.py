@@ -7,7 +7,8 @@ from .services.orderdb import (create_order_db,
                                get_orders_for_buyer_db, 
                                update_order_db, 
                                cancel_order_service, 
-                               get_full_order_db
+                               get_full_order_db,
+                               delete_buyers_all_cancelled_orders_service
 )
 from .services.xmldb import xml_to_db
 from .services.apiKey import get_api_key
@@ -281,15 +282,15 @@ def validate_xml():
         return jsonify({"valid": False, "errors": [str(e)]}), 500
     
 
-@api.route("/v1/buyer/<buyerId>/order/cancelled", methods=["DELETE"])
+@api.route("/v1/buyer/<buyerId>/order/CANCELED", methods=["DELETE"])
 @validate_api_key
 def delete_cancelled_orders(buyerId):
     if not is_valid_uuid(buyerId):
         return jsonify({"error": "buyerId must be a valid UUID"}), 400
 
     with PostgresDB() as db:
-        result = delete_all_cancelled_orders_service(db, buyerId)
-
+        result = delete_buyers_all_cancelled_orders_service(db, buyerId)
+   
     if result.get("status") == 401:
         return jsonify(result), 401
 
@@ -304,7 +305,7 @@ def delete_cancelled_orders(buyerId):
 
     return jsonify({
         "buyerId": buyerId,
-        "message": "All cancelled orders deleted successfully"
+        "message": "All canceled orders deleted successfully"
     }), 200
 
 
