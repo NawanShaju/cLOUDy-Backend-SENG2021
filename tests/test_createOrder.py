@@ -1,9 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from flask import Flask
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app.services.orderdb import (
     create_order_db,
     insert_address,
