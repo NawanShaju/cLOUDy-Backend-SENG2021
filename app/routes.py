@@ -12,7 +12,7 @@ from .services.orderdb import (create_order_db,
 )
 from .services.xmldb import xml_to_db
 from .services.apiKey import get_api_key
-from .services.xmldb import xml_to_db_update_delete
+from .services.xmldb import xml_to_db_update_cancel
 from .utils.helper import to_iso_date
 from app.utils.helper import is_valid_uuid
 from database.PostgresDB import PostgresDB
@@ -123,7 +123,7 @@ def update_order(buyerId, orderId):
         
         full_order = get_full_order_db(db, buyerId, orderId)
         xml_string = generate_xml(full_order, orderId, buyerId)
-        xml_to_db_update_delete(db, xml_string, orderId)
+        xml_to_db_update_cancel(db, xml_string, orderId)
     
 
     return Response(
