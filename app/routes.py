@@ -300,6 +300,9 @@ def delete_cancelled_orders(buyerId):
     if result.get("status") == 403:
         return jsonify(result), 403
 
+    if result.get("status") == 409:
+        return jsonify(result), 409
+
     if result.get("status") == 500:
         return jsonify(result), 500
 
