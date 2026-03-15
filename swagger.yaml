@@ -7,10 +7,10 @@ info:
     This is the UBL ordering API.
 
     🔐 Authentication  
-    All endpoints except `/create-key` and `/health` require an API key.
+    All endpoints except `/get-key` and `/health` require an API key.
 
     To obtain an API key:
-    1. Call **POST /create-key**
+    1. Call **POST /get-key**
     2. Copy the returned key
     3. Send it in requests:
 
@@ -67,12 +67,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
-  /create-key:
+  /get-key:
     post:
       tags:
         - Auth
       security: []
-      summary: Generate API key
+      summary: Generate or get API key
       description: Authenticate a user and generate an API key. If user already registered returns their key.
       requestBody:
         required: true
