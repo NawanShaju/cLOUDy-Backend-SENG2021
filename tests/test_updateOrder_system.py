@@ -60,7 +60,7 @@ def valid_uuid():
 
 def test_update_order(monkeypatch, client):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
-    monkeypatch.setattr("app.routes.update_order_db", lambda db, data, b, o: True)
+    monkeypatch.setattr("app.routes.update_order_service", lambda db, data, b, o: True)
     monkeypatch.setattr("app.routes.get_full_order_db", lambda db, b, o: {
         "order_date": "2026-03-07",
         "delivery_date": "2026-03-10",
@@ -127,7 +127,7 @@ def test_update_order_invalid_buyer_or_order_id(client):
 
 def test_update_order_not_found(monkeypatch, client):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
-    monkeypatch.setattr("app.routes.update_order_db", lambda db, data, b, o: None)
+    monkeypatch.setattr("app.routes.update_order_service", lambda db, data, b, o: None)
 
     buyer_id = valid_uuid()
     order_id = valid_uuid()
@@ -144,11 +144,11 @@ def test_update_order_not_found(monkeypatch, client):
 
 
 def test_update_order_invalid_product(monkeypatch, client):
-    def fake_update_order_db(db, data, b, o):
+    def fake_update_order_service(db, data, b, o):
         return {"error": "please provide a valid product_id"}, 400
 
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
-    monkeypatch.setattr("app.routes.update_order_db", fake_update_order_db)
+    monkeypatch.setattr("app.routes.update_order_service", fake_update_order_service)
 
     monkeypatch.setattr("app.routes.get_full_order_db", lambda db, b, o: None)
     buyer_id = valid_uuid()

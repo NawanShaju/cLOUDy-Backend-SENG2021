@@ -15,7 +15,7 @@ from .orderdb import (
     delete_order_input
 )
 
-def create_order_db(db, data, buyerId):
+def create_order_service(db, data, buyerId):
     
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
@@ -27,7 +27,7 @@ def create_order_db(db, data, buyerId):
     
     return order_id
 
-def update_order_db(db, data, buyerId, orderId):
+def update_order_service(db, data, buyerId, orderId):
     
     if data.get("item") and data.get("item").get("product_id"):
         return jsonify({"error": "please provide a valid product_id"}), 400
@@ -85,3 +85,36 @@ def delete_order_service(db, buyer_id, order_id):
         "orderId": order_id,
         "message": "Order deleted successfully"
     }
+    
+def delete_buyers_all_cancelled_orders_service(db, buyer_id):
+
+    buyer_exists_query = """
+        SELECT 1
+        FROM orders
+        WHERE external_buyer_id = %(buyer_id)s
+    """
+    buyer_exists = db.execute_query(buyer_exists_query, {"buyer_id": buyer_id})
+
+    if not buyer_exists:
+        return {"status": 404, "error": "Buyer not found"}
+
+    cancelled_orders_query = """
+        SELECT order_id
+        FROM orders
+        WHERE external_buyer_id = %(buyer_id)s
+          AND status = 'CANCELED'
+    """
+    cancelled_orders = db.execute_query(cancelled_orders_query, 
+                                        {"buyer_id": buyer_id}, 
+                                        fetch_all=True)
+
+    if not cancelled_orders:
+        return {"status": 409, "error": "No canceled orders found for this buyer"}
+
+    for row in cancelled_orders:
+        order_id = row[0]
+        delete_order_documents(db, order_id)
+        delete_order_items(db, order_id)
+        delete_order_input(db, order_id)
+
+    return {"status": 200}

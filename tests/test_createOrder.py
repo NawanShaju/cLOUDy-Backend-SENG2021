@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
 from flask import Flask
+from app.services.order_service import create_order_service
 from app.services.orderdb import (
-    create_order_db,
     insert_address,
     insert_product,
     insert_order,
@@ -22,23 +22,23 @@ def mock_db():
     return MagicMock()
 
 
-# ––––––––––––––––––––––––––––––––––––––––––––––– create_order_db ──────────────────────────────────────────────────────
+# ––––––––––––––––––––––––––––––––––––––––––––––– create_order_service ──────────────────────────────────────────────────────
 
 def test_create_order_no_data_returns_400(app, mock_db):
     with app.app_context():
-        response, status_code = create_order_db(mock_db, None, "buyer-001")
+        response, status_code = create_order_service(mock_db, None, "buyer-001")
         assert status_code == 400
 
 
 def test_create_order_no_data_returns_error_message(app, mock_db):
     with app.app_context():
-        response, _ = create_order_db(mock_db, None, "buyer-001")
+        response, _ = create_order_service(mock_db, None, "buyer-001")
         assert "error" in response.get_json()
 
 
 def test_create_order_no_data_does_not_touch_db(app, mock_db):
     with app.app_context():
-        create_order_db(mock_db, None, "buyer-001")
+        create_order_service(mock_db, None, "buyer-001")
         mock_db.execute_insert_update_delete.assert_not_called()
 
 
@@ -56,7 +56,7 @@ def test_create_order_returns_order_id(mock_db):
         "address": {"street": "123 Main St", "city": "Sydney", "state": "NSW", "postal_code": "2000", "country_code": "AU"},
         "items": [{"item_name": "Widget A", "item_description": "A widget", "unit_price": 10.00, "quantity": 2}]
     }
-    result = create_order_db(mock_db, data, "buyer-001")
+    result = create_order_service(mock_db, data, "buyer-001")
     assert result == [(999,)]
 
 

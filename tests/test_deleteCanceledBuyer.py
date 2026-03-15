@@ -1,11 +1,11 @@
 import pytest
 from unittest.mock import MagicMock
 from app.services.orderdb import (
-    delete_buyers_all_cancelled_orders_service,
     delete_order_documents,
     delete_order_items,
     delete_order_input
 )
+from app.services.order_service import delete_buyers_all_cancelled_orders_service
 
 @pytest.fixture
 def mock_db():

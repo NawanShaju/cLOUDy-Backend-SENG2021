@@ -2,13 +2,16 @@ from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order, validate_order_xml
 from .services.xmlGeneration import generate_xml
 from .services.apiKey import validate_api_key
-from .services.orderdb import (create_order_db, 
-                               get_order_details, 
-                               get_orders_for_buyer_db, 
-                               update_order_db, 
-                               cancel_order_service, 
-                               get_full_order_db,
-                               delete_buyers_all_cancelled_orders_service
+from .services.orderdb import (
+    get_order_details, 
+    get_orders_for_buyer_db, 
+    get_full_order_db,
+)
+from .services.order_service import (
+    create_order_service,
+    update_order_service,
+    cancel_order_service,
+    delete_buyers_all_cancelled_orders_service
 )
 from .services.xmldb import xml_to_db
 from .services.apiKey import get_api_key
@@ -56,7 +59,7 @@ def create_order(buyerId):
         return jsonify({"error": validate_error}), 400
     
     with PostgresDB() as db:
-        order_id = create_order_db(db, data, buyerId)
+        order_id = create_order_service(db, data, buyerId)
         xml_string = generate_xml(data, order_id[0][0], buyerId)
         xml_to_db(db, xml_string, order_id[0][0])
     
@@ -113,7 +116,7 @@ def update_order(buyerId, orderId):
         data["delivery_date"] = to_iso_date(data.get("delivery_date"))
 
     with PostgresDB() as db:
-        result = update_order_db(db, data, buyerId, orderId)
+        result = update_order_service(db, data, buyerId, orderId)
         
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
