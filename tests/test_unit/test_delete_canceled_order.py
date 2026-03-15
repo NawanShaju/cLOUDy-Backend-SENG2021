@@ -23,15 +23,17 @@ def test_delete_order_not_found(mock_db):
 
 
 def test_delete_order_forbidden(mock_db):
-    mock_db.execute_query.return_value = (
-        "order1",      # order_id
-        "other_buyer", # buyer_id
-        "x",
-        "x",
-        "x",
-        "x",
-        "CANCELED"     # status
-    )
+    mock_db.execute_query.return_value = [
+        (
+            "order1",      # order_id
+            "other_buyer", # external_buyer_id
+            "x",
+            "x",
+            "x",
+            "x",
+            "CANCELED"
+        )
+    ]
 
     result = delete_order_service(mock_db, "buyer1", "order1")
 
@@ -40,15 +42,17 @@ def test_delete_order_forbidden(mock_db):
 
 
 def test_delete_order_not_canceled(mock_db):
-    mock_db.execute_query.return_value = (
-        "order1",
-        "buyer1",
-        "x",
-        "x",
-        "x",
-        "x",
-        "CREATED"
-    )
+    mock_db.execute_query.return_value = [
+        (
+            "order1",
+            "buyer1",
+            "x",
+            "x",
+            "x",
+            "x",
+            "CREATED"
+        )
+    ]
 
     result = delete_order_service(mock_db, "buyer1", "order1")
 
@@ -57,15 +61,17 @@ def test_delete_order_not_canceled(mock_db):
 
 
 def test_delete_order_success(mock_db):
-    mock_db.execute_query.return_value = (
-        "order1",
-        "buyer1",
-        "x",
-        "x",
-        "x",
-        "x",
-        "CANCELED"
-    )
+    mock_db.execute_query.return_value = [
+        (
+            "order1",
+            "buyer1",
+            "x",
+            "x",
+            "x",
+            "x",
+            "CANCELED"
+        )
+    ]
 
     result = delete_order_service(mock_db, "buyer1", "order1")
 
