@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from flask import Flask
 from app.services.orderdb import (
     create_order_db,

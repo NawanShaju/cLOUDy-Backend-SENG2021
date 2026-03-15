@@ -1,5 +1,5 @@
 import pytest
-from flask import Flask, jsonify
+from flask import Flask
 from app.routes import api
 
 class DummyDB:
