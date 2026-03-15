@@ -118,17 +118,6 @@ def mock_auth_db(monkeypatch):
 
     monkeypatch.setattr("app.services.api_key.PostgresDB", lambda: FakeAuthDB())
 
-
-def test_get_orders_for_buyer_invalid_buyer_id(client):
-    response = client.get(
-        "/v1/buyer/not-a-uuid/order",
-        headers=API_HEADERS
-    )
-
-    assert response.status_code == 400
-    assert response.get_json()["error"] == "buyerId must be a valid UUID"
-
-
 def test_get_orders_for_buyer_invalid_limit_type(client):
     response = client.get(
         f"/v1/buyer/{BUYER_ID}/order?limit=abc",

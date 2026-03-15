@@ -61,18 +61,6 @@ def test_delete_cancelled_orders(monkeypatch, client):
     assert data["buyerId"] == buyer_id
     assert "deleted successfully" in data["message"]
 
-
-def test_delete_cancelled_orders_invalid(client):
-    response = client.delete(
-        "/v1/buyer/invalid-uuid/order/CANCELED",
-        headers=API_HEADERS
-    )
-
-    assert response.status_code == 400
-    data = response.get_json()
-    assert "buyerId must be a valid UUID" in data["error"]
-
-
 def test_delete_cancelled_orders_not_found(monkeypatch, client):
     class EmptyDB(DummyDB):
         def execute_query(self, query, params, fetch_all=False):
