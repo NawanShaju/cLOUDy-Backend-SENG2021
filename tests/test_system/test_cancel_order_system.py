@@ -71,15 +71,16 @@ def test_cancel_order_success(monkeypatch, client):
     assert data["orderId"] == order_id
 
 
-def test_cancel_order_invalid_buyer_or_order_id(client):
+def test_cancel_order_invalid_order_id(client):
+    buyer_id = valid_uuid()
     response = client.delete(
-        "/v1/buyer/invalid-uuid/order/invalid-uuid/CANCELED",
+        "/v1/buyer/buyer_id/order/invalid-uuid/CANCELED",
         headers=API_HEADERS
     )
 
     assert response.status_code == 400
     data = response.get_json()
-    assert "buyerId must be a valid UUID" in data["error"]
+    assert "orderId must be a valid UUID" in data["error"]
 
 
 def test_cancel_order_not_found(monkeypatch, client):

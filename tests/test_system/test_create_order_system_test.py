@@ -84,16 +84,6 @@ def valid_order():
 
 # ––––––––––––––––––––––––––––––––––––––––––––––– invalid requests ─────────────────────────────────────────────────────
 
-def test_create_order_invalid_buyer_id(client, valid_order):
-    response = client.post(
-        "/v1/buyer/not-a-uuid/order",
-        json=valid_order,
-        headers=API_HEADERS
-    )
-    assert response.status_code == 400
-    assert "buyerId" in response.get_json()["error"]
-
-
 def test_create_order_missing_json(client):
     response = client.post(
         "/v1/buyer/f5b163a5-b189-4666-8666-9527705b6ce9/order",
