@@ -1,19 +1,6 @@
 from flask import jsonify
-from database.PostgresDB import PostgresDB
 from .xmldb import get_order_xml
 
-def create_order_db(db, data, buyerId):
-    
-    if not data:
-        return jsonify({"error": "Invalid Json Provided"}), 400
-    
-    address_id = insert_address(db, data.get("address"))
-    product_ids = insert_product(db, data.get("items"))
-    order_id = insert_order(db, data, buyerId, address_id[0][0])
-    insert_order_item(db, data.get("items"), order_id[0][0], product_ids)
-    
-    return order_id
-    
 def get_order_details(db, buyerId, orderId):
     query = """
         SELECT
@@ -180,25 +167,6 @@ def insert_address(db, address):
     """
         
     return db.execute_insert_update_delete(query, address)
-
-
-def update_order_db(db, data, buyerId, orderId):
-    
-    if data.get("item") and data.get("item").get("product_id"):
-        return jsonify({"error": "please provide a valid product_id"}), 400
-    
-    if data.get("address"):
-        address_id = update_address(db, data.get("address"), orderId)
-        data["address_id"] = address_id[0]
-
-    if data.get("item"):
-        product_id = update_order_product(db, data.get("item"))
-        update_order_items(db, orderId, data.get("item"), product_id[0][0])
-
-    order = update_order_input(db, data, buyerId, orderId)
-
-    return order
-
 
 def update_address(db, address, orderId):
 
@@ -393,32 +361,6 @@ def get_full_order_db(db, buyer_id, order_id):
         "items": row[9]
     }
 
-def cancel_order_service(db, buyer_id, order_id):
-    result = cancel_order_db(db, buyer_id, order_id)
-    return result
-
-
-def cancel_order_db(db, buyer_id, order_id):
-    order = get_order_db(db, buyer_id, order_id)
-    
-    if not order:
-        return {"status": 404, "error": "Order not found"}
-    order = order[0]
-    if order[1] != buyer_id:
-        return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
-
-    if order[6] in ("CANCELED", "PROCESSED", "FINALISED"):
-        return {"status": 409, "error": "Order cannot be deleted due to current status"}
-
-    cancel_order_input(db, order_id)
-
-    return {
-        "orderId": order_id,
-        "status": "CANCELED",
-        "message": "Order canceled successfully"
-    }
-
-
 def get_order_db(db, buyer_id, order_id):
     query = """
         SELECT * FROM orders
@@ -514,33 +456,6 @@ def get_orders_for_buyer_db(db, buyerId, status=None, from_date=None, to_date=No
         })
 
     return orders
-
-def delete_order_service(db, buyer_id, order_id):
-    result = delete_order_db(db, buyer_id, order_id)
-    return result
-
-
-def delete_order_db(db, buyer_id, order_id):
-    order = get_order_db(db, buyer_id, order_id)
-
-    if not order:
-        return {"status": 404, "error": "Order not found"}
-
-    if order[1] != buyer_id:
-        return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
-
-    if order[6] != "CANCELED":
-        return {"status": 409, "error": "Order cannot be deleted unless status is CANCELED"}
-
-    delete_order_documents(db, order_id)
-    delete_order_items(db, order_id)
-    delete_order_input(db, order_id)
-
-    return {
-        "orderId": order_id,
-        "message": "Order deleted successfully"
-    }
-
 
 def delete_order_documents(db, order_id):
     query = """
