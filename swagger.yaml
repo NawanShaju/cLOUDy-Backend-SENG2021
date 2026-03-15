@@ -7,7 +7,7 @@ info:
     This is the UBL ordering API.
 
     🔐 Authentication  
-    All endpoints except `/create-key`, `/health`, and `/v1/validate-xml` require an API key.
+    All endpoints except `/get-key`, `/health`, and `/v1/validate-xml` require an API key.
 
     To obtain an API key:
     1. Call **POST /get-key**
