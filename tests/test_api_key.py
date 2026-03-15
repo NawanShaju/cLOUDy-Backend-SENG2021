@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from app.services.apiKey import hash_password, verify_password, get_api_key
+from app.services.api_key import hash_password, verify_password, get_api_key
 
 
 def test_hash_password():

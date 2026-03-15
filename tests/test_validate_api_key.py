@@ -5,7 +5,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.services.apiKey import validate_api_key
+from app.services.api_key import validate_api_key
 
 
 def test_validate_api_key_success():

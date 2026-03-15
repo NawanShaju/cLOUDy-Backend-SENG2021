@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order, validate_order_xml
-from .services.xmlGeneration import generate_xml
-from .services.apiKey import validate_api_key
-from .services.orderdb import (
+from .services.xml_generation import generate_xml
+from .services.api_key import validate_api_key
+from .services.order_db import (
     get_order_details, 
     get_orders_for_buyer_db, 
     get_full_order_db,
@@ -13,9 +13,9 @@ from .services.order_service import (
     cancel_order_service,
     delete_buyers_all_cancelled_orders_service
 )
-from .services.xmldb import xml_to_db
-from .services.apiKey import get_api_key
-from .services.xmldb import xml_to_db_update_cancel
+from .services.xml_db import xml_to_db
+from .services.api_key import get_api_key
+from .services.xml_db import xml_to_db_update_cancel
 from .utils.helper import to_iso_date
 from app.utils.helper import is_valid_uuid
 from database.PostgresDB import PostgresDB

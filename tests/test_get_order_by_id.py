@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from app.services.orderdb import get_order_details
+from app.services.order_db import get_order_details
 
 
 @pytest.fixture

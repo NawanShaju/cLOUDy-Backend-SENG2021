@@ -1,5 +1,5 @@
 from flask import jsonify
-from .xmldb import get_order_xml
+from .xml_db import get_order_xml
 
 def get_order_details(db, buyerId, orderId):
     query = """

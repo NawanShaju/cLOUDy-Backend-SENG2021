@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from app.services.xmldb import xml_to_db
+from app.services.xml_db import xml_to_db
 
 @pytest.fixture
 def mock_db():

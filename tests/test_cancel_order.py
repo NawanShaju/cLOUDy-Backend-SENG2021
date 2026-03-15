@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from app.services.orderdb import cancel_order_input
+from app.services.order_db import cancel_order_input
 from app.services.order_service import cancel_order_service
 
 @pytest.fixture

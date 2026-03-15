@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from datetime import date
-from app.services.orderdb import get_orders_for_buyer_db
+from app.services.order_db import get_orders_for_buyer_db
 
 
 @pytest.fixture
