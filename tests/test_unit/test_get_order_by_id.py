@@ -1,21 +1,18 @@
 import pytest
 from unittest.mock import MagicMock
-from app.services.orderdb import get_order_details
-
+from app.services.order_service import get_order_details_service
 
 @pytest.fixture
 def mock_db():
     db = MagicMock()
     return db
 
-
 def test_get_order_details_not_found(mock_db):
     mock_db.execute_query.return_value = []
 
-    result = get_order_details(mock_db, "buyer1", "order1")
+    result = get_order_details_service(mock_db, "buyer1", "order1")
 
     assert result is None
-
 
 def test_get_order_details_no_xml(mock_db):
     order_rows = [
@@ -27,10 +24,9 @@ def test_get_order_details_no_xml(mock_db):
         None
     ]
 
-    result = get_order_details(mock_db, "buyer1", "order1")
+    result = get_order_details_service(mock_db, "buyer1", "order1")
 
     assert result is None
-
 
 def test_get_order_details_single_item(mock_db):
     order_rows = [
@@ -43,7 +39,7 @@ def test_get_order_details_single_item(mock_db):
         [xml]
     ]
 
-    result = get_order_details(mock_db, "buyer1", "order1")
+    result = get_order_details_service(mock_db, "buyer1", "order1")
 
     assert result["orderId"] == "order1"
     assert result["status"] == "CREATED"
@@ -58,7 +54,6 @@ def test_get_order_details_single_item(mock_db):
     assert item["quantity"] == 10
     assert item["totalPrice"] == "15"
 
-
 def test_get_order_details_multiple_items(mock_db):
     order_rows = [
         ("order1", "CANCELED", "prod1", "Bolt", "desc", 1.5, 10, 15),
@@ -71,7 +66,7 @@ def test_get_order_details_multiple_items(mock_db):
         [xml]
     ]
 
-    result = get_order_details(mock_db, "buyer1", "order1")
+    result = get_order_details_service(mock_db, "buyer1", "order1")
 
     assert result["orderId"] == "order1"
     assert result["status"] == "CANCELED"
@@ -80,7 +75,6 @@ def test_get_order_details_multiple_items(mock_db):
 
     assert result["items"][0]["productId"] == "prod1"
     assert result["items"][1]["productId"] == "prod2"
-
 
 def test_get_order_details_none_values(mock_db):
     order_rows = [
@@ -93,7 +87,7 @@ def test_get_order_details_none_values(mock_db):
         [xml]
     ]
 
-    result = get_order_details(mock_db, "buyer1", "order1")
+    result = get_order_details_service(mock_db, "buyer1", "order1")
 
     item = result["items"][0]
 
@@ -106,7 +100,6 @@ def test_get_order_details_none_values(mock_db):
     assert item["quantity"] == 10
     assert item["totalPrice"] is None
 
-
 def test_get_order_details_converts(mock_db):
     order_rows = [
         (123, "CREATED", 456, "Bolt", "desc", 1.5, 10, 15.75)
@@ -118,7 +111,7 @@ def test_get_order_details_converts(mock_db):
         [xml]
     ]
 
-    result = get_order_details(mock_db, "buyer1", "order1")
+    result = get_order_details_service(mock_db, "buyer1", "order1")
 
     item = result["items"][0]
 
@@ -126,7 +119,6 @@ def test_get_order_details_converts(mock_db):
     assert item["productId"] == "456"
     assert item["unitPrice"] == "1.5"
     assert item["totalPrice"] == "15.75"
-
 
 def test_get_order_details_calls_db_twice(mock_db):
     order_rows = [
@@ -139,6 +131,6 @@ def test_get_order_details_calls_db_twice(mock_db):
         [xml]
     ]
 
-    get_order_details(mock_db, "buyer1", "order1")
+    get_order_details_service(mock_db, "buyer1", "order1")
 
     assert mock_db.execute_query.call_count == 2

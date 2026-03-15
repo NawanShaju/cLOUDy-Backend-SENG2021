@@ -42,7 +42,7 @@ CREATE TABLE addresses (
 -- =========================================
 CREATE TABLE orders (
     order_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    external_buyer_id UUID NOT NULL,
+    external_buyer_id NOT NULL,
     address_id UUID NOT NULL,
     order_date DATE,
     delivery_date DATE,

@@ -94,7 +94,7 @@ def mock_auth_db(monkeypatch):
         def execute_query(self, query, params):
             return [("dummy-key",)]
 
-    monkeypatch.setattr("app.services.apiKey.PostgresDB", lambda: FakeAuthDB())
+    monkeypatch.setattr("app.services.api_key.PostgresDB", lambda: FakeAuthDB())
 
 
 def test_get_order_by_id_invalid_buyer_id(client):

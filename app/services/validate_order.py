@@ -1,6 +1,6 @@
 from lxml import etree
 from datetime import datetime
-from .xmlGeneration import NS_CAC, NS_ORDER, NS_CBC
+from ..utils.xml_generation import NS_CAC, NS_ORDER, NS_CBC
 
 def validate_order(data, buyerId):
     

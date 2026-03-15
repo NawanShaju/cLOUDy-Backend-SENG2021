@@ -1,14 +1,10 @@
 import pytest
 from unittest.mock import MagicMock
-from app.services.xmldb import (
-    xml_to_db_update_cancel
-)
-
+from app.services.db_services.xml_db import xml_to_db_update_cancel
 
 @pytest.fixture
 def mock_db():
     return MagicMock()
-
 
 def test_xml_to_db_update_cancel_plain_string(mock_db):
     order_id = "order123"
@@ -21,7 +17,6 @@ def test_xml_to_db_update_cancel_plain_string(mock_db):
     assert params["xml_content"] == xml
     assert params["order_id"] == order_id
 
-
 def test_xml_to_db_update_cancel_bytes(mock_db):
     order_id = "order123"
     xml = b"<order><status>cancelled</status></order>"
@@ -31,3 +26,4 @@ def test_xml_to_db_update_cancel_bytes(mock_db):
     _, params = mock_db.execute_insert_update_delete.call_args[0]
     assert params["xml_content"] == xml
     assert params["order_id"] == order_id
+    

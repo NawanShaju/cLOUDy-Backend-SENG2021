@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from app.services.xmldb import xml_to_db
+from app.services.db_services.xml_db import xml_to_db
 
 @pytest.fixture
 def mock_db():
@@ -16,3 +16,4 @@ def test_xml_to_db_passes_correct_params(mock_db):
     assert params["order_id"] == "order-001"
     assert params["xml_content"] == "<order/>"
     assert params["document_version"] == 1
+    

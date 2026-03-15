@@ -5,7 +5,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.services.apiKey import validate_api_key
+from app.services.api_key import validate_api_key
 
 
 def test_validate_api_key_success():
@@ -16,7 +16,7 @@ def test_validate_api_key_success():
         return "success"
 
     with app.test_request_context(headers={"api-key": "valid_key"}):
-        with patch("app.services.apiKey.PostgresDB") as mock_db:
+        with patch("app.services.api_key.PostgresDB") as mock_db:
 
             mock_instance = MagicMock()
             mock_instance.execute_query.return_value = True
@@ -35,7 +35,7 @@ def test_validate_api_key_unauthorized():
         return "success"
 
     with app.test_request_context(headers={"api-key": "invalid"}):
-        with patch("app.services.apiKey.PostgresDB") as mock_db:
+        with patch("app.services.api_key.PostgresDB") as mock_db:
 
             mock_instance = MagicMock()
             mock_instance.execute_query.return_value = None
