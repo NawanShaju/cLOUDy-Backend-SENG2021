@@ -7,6 +7,7 @@ from .services.order_service import (
     create_order_service,
     update_order_service,
     cancel_order_service,
+    delete_order_service,
     get_order_details_service,
     get_orders_for_buyer_service,
     delete_buyers_all_cancelled_orders_service
@@ -184,6 +185,32 @@ def cancel_order(buyerId, orderId):
 
     return jsonify(result), 200
 
+@api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["DELETE"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def delete_order_by_id(buyerId, orderId):
+    if not is_valid_uuid(orderId):
+        return jsonify({"error": "orderId must be a valid UUID"}), 400
+
+    with PostgresDB() as db:
+        result = delete_order_service(db, buyerId, orderId)
+
+    if result.get("status") == 401:
+        return jsonify(result), 401
+
+    if result.get("status") == 404:
+        return jsonify(result), 404
+
+    if result.get("status") == 403:
+        return jsonify(result), 403
+
+    if result.get("status") == 409:
+        return jsonify(result), 409
+
+    if result.get("status") == 500:
+        return jsonify(result), 500
+
+    return jsonify(result), 200
 
 @api.route("/v1/buyer/<buyerId>/order", methods = ["GET"])
 @validate_api_key
