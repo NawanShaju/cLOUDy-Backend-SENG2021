@@ -506,6 +506,35 @@ class TestOrderLines:
         assert is_valid is False
         assert any("cbc:Name" in e for e in errors)
 
+    def test_line_extension_amount_missing_entirely_fails(self):
+        xml = make_xml(order_lines="""
+  <cac:OrderLine>
+    <cac:LineItem>
+      <cbc:ID>1</cbc:ID>
+      <cbc:Quantity unitCode="EA">10</cbc:Quantity>
+      <cac:Price><cbc:PriceAmount currencyID="AUD">10.00</cbc:PriceAmount></cac:Price>
+      <cac:Item><cbc:Name>Widget</cbc:Name></cac:Item>
+    </cac:LineItem>
+  </cac:OrderLine>""")
+        is_valid, errors = validate_order_xml(xml)
+        assert is_valid is False
+        assert any("LineExtensionAmount" in e for e in errors)
+
+    def test_price_amount_missing_entirely_fails(self):
+        xml = make_xml(order_lines="""
+  <cac:OrderLine>
+    <cac:LineItem>
+      <cbc:ID>1</cbc:ID>
+      <cbc:Quantity unitCode="EA">10</cbc:Quantity>
+      <cbc:LineExtensionAmount currencyID="AUD">100.00</cbc:LineExtensionAmount>
+      <cac:Price></cac:Price>
+      <cac:Item><cbc:Name>Widget</cbc:Name></cac:Item>
+    </cac:LineItem>
+  </cac:OrderLine>""")
+        is_valid, errors = validate_order_xml(xml)
+        assert is_valid is False
+        assert any("PriceAmount" in e for e in errors)
+
     def test_errors_reported_per_line(self):
         """Multiple broken lines should report errors for each individually."""
         xml = make_xml(order_lines="""
