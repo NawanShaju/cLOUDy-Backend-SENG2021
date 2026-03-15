@@ -19,6 +19,7 @@ from app.utils.helper import is_valid_uuid
 from database.PostgresDB import PostgresDB
 from flask import send_from_directory
 from flask_swagger_ui import get_swaggerui_blueprint
+from app.extensions import limiter
 import os
 
 api = Blueprint("main", __name__)
@@ -33,11 +34,13 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 )
 
 @api.route("/health", methods=["GET"])
+@limiter.limit("200 per minute")
 def health_check():
     return jsonify({"status": "running"}), 200
 
 @api.route("/v1/buyer/<buyerId>/order", methods=["POST"])
 @validate_api_key
+@limiter.limit("10 per minute")
 def create_order(buyerId):
     
     data = request.get_json()
@@ -67,7 +70,8 @@ def create_order(buyerId):
         status=200
     )
     
-@api.route("/create-key", methods=["POST"])
+@api.route("/get-key", methods=["POST"])
+@limiter.limit("100 per hour")
 def create_apiKey():
     data = request.get_json()
     
@@ -95,6 +99,7 @@ def create_apiKey():
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["PUT"])
 @validate_api_key
+@limiter.limit("100 per hour")
 def update_order(buyerId, orderId):
     data = request.get_json()
 
@@ -135,6 +140,7 @@ def update_order(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods = ["GET"])
 @validate_api_key
+@limiter.limit("60 per minute")
 def get_order_by_id(buyerId, orderId):
     
     if not is_valid_uuid(buyerId):
@@ -163,6 +169,7 @@ def get_order_by_id(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>/CANCELED", methods=["DELETE"])
 @validate_api_key
+@limiter.limit("20 per minute")
 def cancel_order(buyerId, orderId):
     
     if not is_valid_uuid(buyerId):
@@ -194,6 +201,7 @@ def cancel_order(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order", methods = ["GET"])
 @validate_api_key
+@limiter.limit("60 per minute")
 def get_orders_for_buyer(buyerId):
     
     if not is_valid_uuid(buyerId):
@@ -284,6 +292,7 @@ def validate_xml():
 
 @api.route("/v1/buyer/<buyerId>/order/CANCELED", methods=["DELETE"])
 @validate_api_key
+@limiter.limit("20 per minute")
 def delete_cancelled_orders(buyerId):
     if not is_valid_uuid(buyerId):
         return jsonify({"error": "buyerId must be a valid UUID"}), 400
@@ -302,6 +311,7 @@ def delete_cancelled_orders(buyerId):
 
 def register_swagger_yaml(app):
     @app.route("/swagger.yaml")
+    @limiter.limit("100 per minute")
     def swagger_spec():
         parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         return send_from_directory(parent_dir, "swagger.yaml")
