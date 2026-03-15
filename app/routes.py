@@ -47,10 +47,7 @@ def create_order(buyerId):
     
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
-    
-    if not is_valid_uuid(buyerId):
-        return jsonify({"error": "buyerId must be a valid UUID"}), 400
-    
+        
     data["order_date"] = to_iso_date(data.get("order_date"))
     data["delivery_date"] = to_iso_date(data.get("delivery_date"))
     
@@ -106,9 +103,6 @@ def update_order(buyerId, orderId):
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
     
-    if not is_valid_uuid(buyerId):
-        return jsonify({"error": "buyerId must be a valid UUID"}), 400
-    
     if not is_valid_uuid(orderId):
         return jsonify({"error": "orderId must be a valid UUID"}), 400
     
@@ -142,10 +136,6 @@ def update_order(buyerId, orderId):
 @validate_api_key
 @limiter.limit("60 per minute")
 def get_order_by_id(buyerId, orderId):
-    
-    if not is_valid_uuid(buyerId):
-        return jsonify({"error": "buyerId must be a valid UUID"}), 400
-    
     if not is_valid_uuid(orderId):
         return jsonify({"error": "orderId must be a valid UUID"}), 400
 
@@ -171,10 +161,6 @@ def get_order_by_id(buyerId, orderId):
 @validate_api_key
 @limiter.limit("20 per minute")
 def cancel_order(buyerId, orderId):
-    
-    if not is_valid_uuid(buyerId):
-        return jsonify({"error": "buyerId must be a valid UUID"}), 400
-    
     if not is_valid_uuid(orderId):
         return jsonify({"error": "orderId must be a valid UUID"}), 400
     
@@ -203,10 +189,6 @@ def cancel_order(buyerId, orderId):
 @validate_api_key
 @limiter.limit("60 per minute")
 def get_orders_for_buyer(buyerId):
-    
-    if not is_valid_uuid(buyerId):
-        return jsonify({"error": "buyerId must be a valid UUID"}), 400
-    
     try:
         status = request.args.get("status")
         from_date = request.args.get("fromDate")
@@ -294,9 +276,6 @@ def validate_xml():
 @validate_api_key
 @limiter.limit("20 per minute")
 def delete_cancelled_orders(buyerId):
-    if not is_valid_uuid(buyerId):
-        return jsonify({"error": "buyerId must be a valid UUID"}), 400
-
     with PostgresDB() as db:
         result = delete_buyers_all_cancelled_orders_service(db, buyerId)
    

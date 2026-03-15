@@ -23,6 +23,7 @@ from .db_services.order_db import (
     delete_order_items,
     delete_order,
 )
+from app.utils.helper import is_valid_uuid
 
 def get_full_order_service(db, buyer_id, order_id):
     row = get_full_order(db, buyer_id, order_id)
@@ -103,10 +104,6 @@ def create_order_service(db, data, buyerId):
     return order_id
 
 def _resolve_updated_address(db, incoming_address, orderId):
-    """
-    Merges incoming (partial) address fields with the existing address on the order,
-    then finds or creates the resulting address record. Returns the address_id.
-    """
     existing = get_existing_address_by_order(db, orderId)
 
     merged = {
@@ -123,10 +120,6 @@ def _resolve_updated_address(db, incoming_address, orderId):
     return upsert_address(db, merged)
 
 def _resolve_updated_product(db, item):
-    """
-    Checks for a duplicate product before updating. Returns the product_id,
-    or raises a ValueError if the product_id provided is invalid.
-    """
     duplicate = find_duplicate_product(db, item)
     if duplicate:
         return duplicate
@@ -140,6 +133,9 @@ def _resolve_updated_product(db, item):
 def update_order_service(db, data, buyerId, orderId):
     if data.get("item") and not data.get("item").get("product_id"):
         return jsonify({"error": "please provide a valid product_id"}), 400
+    
+    if data.get("item") and not is_valid_uuid(data.get("item").get("product_id")):
+        return jsonify({"error": "product_id most be a uuid"}), 400
 
     if data.get("address"):
         address_id = _resolve_updated_address(db, data.get("address"), orderId)
