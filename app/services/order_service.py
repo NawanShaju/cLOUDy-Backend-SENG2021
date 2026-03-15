@@ -1,6 +1,7 @@
 from flask import jsonify
 from .xml_db import get_order_xml
 from .order_db import (
+    get_full_order,
     get_order_details,
     insert_address,
     insert_product,
@@ -22,6 +23,27 @@ from .order_db import (
     delete_order_items,
     delete_order,
 )
+
+def get_full_order_service(db, buyer_id, order_id):
+    row = get_full_order(db, buyer_id, order_id)
+
+    if not row:
+        return None
+
+    return {
+        "order_date":    row[0].isoformat(),
+        "delivery_date": row[1].isoformat(),
+        "currency_code": row[2],
+        "status":        row[3],
+        "address": {
+            "street":       row[4],
+            "city":         row[5],
+            "state":        row[6],
+            "postal_code":  row[7],
+            "country_code": row[8]
+        },
+        "items": row[9]
+    }
 
 def get_order_details_service(db, buyerId, orderId):
     results = get_order_details(db, buyerId, orderId)

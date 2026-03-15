@@ -2,8 +2,8 @@ from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order, validate_order_xml
 from .services.xml_generation import generate_xml
 from .services.api_key import validate_api_key
-from .services.order_db import get_full_order
 from .services.order_service import (
+    get_full_order_service,
     create_order_service,
     update_order_service,
     cancel_order_service,
@@ -122,7 +122,7 @@ def update_order(buyerId, orderId):
         if not result:
             return jsonify({"error": "Order not found"}), 404
         
-        full_order = get_full_order(db, buyerId, orderId)
+        full_order = get_full_order_service(db, buyerId, orderId)
         xml_string = generate_xml(full_order, orderId, buyerId)
         xml_to_db_update_cancel(db, xml_string, orderId)
     
