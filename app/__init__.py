@@ -1,5 +1,5 @@
 from flask import Flask
-from .extensions import limiter
+from .utils.extensions import limiter
 from .routes import api, swaggerui_blueprint, register_swagger_yaml
 
 def create_app(config_object="config.Config"):

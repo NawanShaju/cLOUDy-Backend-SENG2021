@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order, validate_order_xml
-from .services.xml_generation import generate_xml
+from .utils.xml_generation import generate_xml
 from .services.api_key import validate_api_key
 from .services.order_service import (
     get_full_order_service,
@@ -11,15 +11,15 @@ from .services.order_service import (
     get_orders_for_buyer_service,
     delete_buyers_all_cancelled_orders_service
 )
-from .services.xml_db import xml_to_db
+from .services.db_services.xml_db import xml_to_db
 from .services.api_key import get_api_key
-from .services.xml_db import xml_to_db_update_cancel
+from .services.db_services.xml_db import xml_to_db_update_cancel
 from .utils.helper import to_iso_date
 from app.utils.helper import is_valid_uuid
 from database.PostgresDB import PostgresDB
 from flask import send_from_directory
 from flask_swagger_ui import get_swaggerui_blueprint
-from app.extensions import limiter
+from app.utils.extensions import limiter
 import os
 
 api = Blueprint("main", __name__)

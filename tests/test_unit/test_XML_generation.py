@@ -1,6 +1,6 @@
 import pytest
 from lxml import etree
-from app.services.xml_generation import generate_xml
+from app.utils.xml_generation import generate_xml
 
 NS_CAC = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
 NS_CBC = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"

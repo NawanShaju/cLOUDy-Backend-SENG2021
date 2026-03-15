@@ -27,7 +27,7 @@ def test_create_apiKey_success(monkeypatch, client):
     monkeypatch.setattr("app.routes.get_api_key", lambda db, u, p: "dummy-apikey-1234")
     
     response = client.post(
-        "/create-key",
+        "/get-key",
         json={"username": "test", "password": "test123"}
     )
     
@@ -36,7 +36,7 @@ def test_create_apiKey_success(monkeypatch, client):
     assert data["apikey"] == "dummy-apikey-1234"
 
 def test_create_apiKey_missing_json(client):
-    response = response = client.post("/create-key", json={})
+    response = response = client.post("/get-key", json={})
     assert response.status_code == 400
     data = response.get_json()
     assert data["error"] == "Invalid json Provided"
@@ -49,7 +49,7 @@ def test_create_apiKey_value_error(monkeypatch, client):
     
     monkeypatch.setattr("app.routes.get_api_key", raise_value_error)
     
-    response = client.post("/create-key", json={"username": "test", "password": "wrong"})
+    response = client.post("/get-key", json={"username": "test", "password": "wrong"})
     assert response.status_code == 400
     data = response.get_json()
     assert data["error"] == "Invalid credentials"
@@ -62,7 +62,7 @@ def test_create_apiKey_permission_error(monkeypatch, client):
     
     monkeypatch.setattr("app.routes.get_api_key", raise_permission_error)
     
-    response = client.post("/create-key", json={"username": "test", "password": "test123"})
+    response = client.post("/get-key", json={"username": "test", "password": "test123"})
     assert response.status_code == 401
     data = response.get_json()
     assert data["error"] == "Unauthorized"

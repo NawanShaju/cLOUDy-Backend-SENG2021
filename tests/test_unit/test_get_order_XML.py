@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from app.services.xml_db import get_order_xml
+from app.services.db_services.xml_db import get_order_xml
 
 
 @pytest.fixture
