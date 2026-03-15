@@ -1,6 +1,3 @@
-from flask import jsonify
-from .xml_db import get_order_xml
-
 def get_order_details(db, buyerId, orderId):
     query = """
         SELECT
@@ -20,38 +17,8 @@ def get_order_details(db, buyerId, orderId):
         WHERE o.order_id = %(order_id)s
           AND o.external_buyer_id = %(buyer_id)s
     """
-
-    params = {
-        "order_id": orderId,
-        "buyer_id": buyerId
-    }
-
-    results = db.execute_query(query, params, fetch_all=True)
-
-    if not results:
-        return None
-
-    xml_content = get_order_xml(db, orderId)
-
-    if not xml_content:
-        return None
-
-    return {
-        "orderId": str(results[0][0]),
-        "status": results[0][1],
-        "items": [
-            {
-                "productId": str(row[2]) if row[2] is not None else None,
-                "productName": row[3],
-                "productDescription": row[4],
-                "unitPrice": str(row[5]) if row[5] is not None else None,
-                "quantity": row[6],
-                "totalPrice": str(row[7]) if row[7] is not None else None
-            }
-            for row in results
-        ],
-        "xml": xml_content
-    }
+    params = {"order_id": orderId, "buyer_id": buyerId}
+    return db.execute_query(query, params, fetch_all=True)
 
 def insert_order_item(db, items, order_id, product_map):
     query = """
@@ -70,22 +37,17 @@ def insert_order_item(db, items, order_id, product_map):
         ON CONFLICT (order_id, product_id)
         DO NOTHING
     """
-
     for item in items:
         product_id = product_map[item["item_name"]]
-
         params = {
             "order_id": order_id,
             "product_id": product_id,
             "quantity": int(item.get("quantity")),
             "total_price": item.get("unit_price") * item.get("quantity")
         }
-
         db.execute_insert_update_delete(query, params)
-    
-    
+
 def insert_order(db, data, buyerId, address_id):
-    
     query = """
         INSERT INTO orders (
             external_buyer_id,
@@ -94,7 +56,7 @@ def insert_order(db, data, buyerId, address_id):
             delivery_date,
             currency_code,
             status
-        ) 
+        )
         VALUES (
             %(buyerId)s,
             %(address_id)s,
@@ -105,7 +67,6 @@ def insert_order(db, data, buyerId, address_id):
         )
         RETURNING order_id
     """
-    
     params = {
         "buyerId": buyerId,
         "address_id": address_id,
@@ -114,7 +75,6 @@ def insert_order(db, data, buyerId, address_id):
         "currency_code": data.get("currency_code"),
         "status": "CREATED"
     }
-    
     return db.execute_insert_update_delete(query, params)
 
 def insert_product(db, items):
@@ -134,15 +94,11 @@ def insert_product(db, items):
             product_name = EXCLUDED.product_name
         RETURNING product_id
     """
-
     product_map = {}
-
     for item in items:
         result = db.execute_insert_update_delete(query, item)
         product_map[item["item_name"]] = result[0]
-
     return product_map
-    
 
 def insert_address(db, address):
     query = """
@@ -165,28 +121,20 @@ def insert_address(db, address):
             street = EXCLUDED.street
         RETURNING address_id
     """
-        
     return db.execute_insert_update_delete(query, address)
 
-def update_address(db, address, orderId):
-
-    get_query = """
+def get_existing_address_by_order(db, orderId):
+    query = """
         SELECT a.street, a.city, a.state, a.postal_code, a.country_code
         FROM addresses a
         JOIN orders o ON o.address_id = a.address_id
         WHERE o.order_id = %(order_id)s
     """
-    existing = db.execute_query(get_query, {"order_id": orderId})
+    return db.execute_query(query, {"order_id": orderId})
 
-    merged = {
-        "street":       address.get("street")       if address.get("street")       is not None else existing[0],
-        "city":         address.get("city")         if address.get("city")         is not None else existing[1],
-        "state":        address.get("state")        if address.get("state")        is not None else existing[2],
-        "postal_code":  address.get("postal_code")  if address.get("postal_code")  is not None else existing[3],
-        "country_code": address.get("country_code") if address.get("country_code") is not None else existing[4]
-    }
-    
-    check_query = """
+
+def find_address_by_fields(db, address_fields):
+    query = """
         SELECT address_id
         FROM addresses
         WHERE street = %(street)s
@@ -195,29 +143,23 @@ def update_address(db, address, orderId):
         AND postal_code = %(postal_code)s
         AND country_code = %(country_code)s
     """
-    
-    existing_address = db.execute_query(check_query, merged)
+    return db.execute_query(query, address_fields)
 
-    if existing_address:
-        address_id = existing_address
-    else:
-        query = """
-            INSERT INTO addresses (
-                street, city, state, postal_code, country_code
-            )
-            VALUES (
-                %(street)s, %(city)s, %(state)s, %(postal_code)s, %(country_code)s
-            )
-            ON CONFLICT (street, city, state, postal_code, country_code)
-            DO UPDATE SET street = EXCLUDED.street
-            RETURNING address_id
-        """
-        address_id = db.execute_insert_update_delete(query, merged)
-        
-    return address_id
+def upsert_address(db, address_fields):
+    query = """
+        INSERT INTO addresses (
+            street, city, state, postal_code, country_code
+        )
+        VALUES (
+            %(street)s, %(city)s, %(state)s, %(postal_code)s, %(country_code)s
+        )
+        ON CONFLICT (street, city, state, postal_code, country_code)
+        DO UPDATE SET street = EXCLUDED.street
+        RETURNING address_id
+    """
+    return db.execute_insert_update_delete(query, address_fields)
 
-
-def update_order_input(db, data, buyerId, orderId):
+def update_order(db, data, buyerId, orderId):
     query = """
         UPDATE orders SET
             order_date      = COALESCE(%(order_date)s, order_date),
@@ -229,7 +171,6 @@ def update_order_input(db, data, buyerId, orderId):
         AND external_buyer_id = %(buyerId)s
         RETURNING *
     """
-
     params = {
         "order_date":    data.get("order_date"),
         "delivery_date": data.get("delivery_date"),
@@ -239,9 +180,7 @@ def update_order_input(db, data, buyerId, orderId):
         "orderId":       orderId,
         "buyerId":       buyerId
     }
-
     return db.execute_insert_update_delete(query, params)
-
 
 def update_order_items(db, order_id, item, product_id):
     query = """
@@ -253,68 +192,54 @@ def update_order_items(db, order_id, item, product_id):
         AND product_id = %(product_id)s
         RETURNING order_item_id
     """
-
-    if not item.get("unit_price") or not item.get("quantity"):
-        total_price = None
-    else:
-        total_price = item.get("unit_price") * item.get("quantity")
-
     params = {
         "order_id":    order_id,
         "product_id":  product_id,
         "quantity":    int(item["quantity"]) if item.get("quantity") is not None else None,
-        "total_price": total_price
+        "total_price": item.get("unit_price") * item.get("quantity")
+                       if item.get("unit_price") and item.get("quantity") else None
     }
+    return db.execute_insert_update_delete(query, params)
 
-    result = db.execute_insert_update_delete(query, params)
-    
-    if not result:
-        return jsonify({"error": "Not Updated, invalid product id or order id"})
-
-
-def update_order_product(db, item):
-    
-    check_query = """
+def find_duplicate_product(db, item):
+    query = """
         SELECT product_id
         FROM products
         WHERE product_name = %(item_name)s
         AND unit_price = %(unit_price)s
         AND product_description = %(item_description)s
         AND product_id != %(product_id)s
-    """    
-    
+    """
     params = {
-        "item_name": item.get("item_name"),
+        "item_name":        item.get("item_name"),
         "item_description": item.get("item_description"),
-        "unit_price": item.get("unit_price"),
-        "product_id": item.get("product_id")
+        "unit_price":       item.get("unit_price"),
+        "product_id":       item.get("product_id")
     }
-    
-    product_id = db.execute_query(check_query, params)
-    
-    if not product_id:
-        query = """
-            UPDATE products
-            SET
-                product_name = COALESCE(%(item_name)s, product_name),
-                product_description = COALESCE(%(item_description)s, product_description),
-                unit_price = COALESCE(%(unit_price)s, unit_price),
-                updated_at = CURRENT_TIMESTAMP
-            WHERE product_id = %(product_id)s
-            RETURNING product_id
-        """
+    return db.execute_query(query, params)
 
-        product_id = db.execute_insert_update_delete(query, params)
-
-        if not product_id:
-            return jsonify({"error": "The product id provided is invalid"}), 400
-
-    return product_id
-
-
-def get_full_order_db(db, buyer_id, order_id):
+def update_product(db, item):
     query = """
-        SELECT 
+        UPDATE products
+        SET
+            product_name = COALESCE(%(item_name)s, product_name),
+            product_description = COALESCE(%(item_description)s, product_description),
+            unit_price = COALESCE(%(unit_price)s, unit_price),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE product_id = %(product_id)s
+        RETURNING product_id
+    """
+    params = {
+        "item_name":        item.get("item_name"),
+        "item_description": item.get("item_description"),
+        "unit_price":       item.get("unit_price"),
+        "product_id":       item.get("product_id")
+    }
+    return db.execute_insert_update_delete(query, params)
+
+def get_full_order(db, buyer_id, order_id):
+    query = """
+        SELECT
             o.order_date,
             o.delivery_date,
             o.currency_code,
@@ -336,68 +261,31 @@ def get_full_order_db(db, buyer_id, order_id):
         LEFT JOIN products p ON oi.product_id = p.product_id
         WHERE o.order_id = %(order_id)s
         AND o.external_buyer_id = %(buyer_id)s
-        GROUP BY o.order_date, o.delivery_date, o.currency_code, 
+        GROUP BY o.order_date, o.delivery_date, o.currency_code,
                  o.status, a.street, a.city, a.state, a.postal_code, a.country_code
     """
     params = {"order_id": order_id, "buyer_id": buyer_id}
-    result = db.execute_query(query, params)
-    
-    if not result:
-        return None
+    return db.execute_query(query, params)
 
-    row = result
-    return {
-        "order_date":    row[0].isoformat(),
-        "delivery_date": row[1].isoformat(),
-        "currency_code": row[2],
-        "status":        row[3],
-        "address": {
-            "street":       row[4],
-            "city":         row[5],
-            "state":        row[6],
-            "postal_code":  row[7],
-            "country_code": row[8]
-        },
-        "items": row[9]
-    }
-
-def get_order_db(db, buyer_id, order_id):
+def get_order_by_id(db, buyer_id, order_id):
     query = """
         SELECT * FROM orders
         WHERE order_id = %(order_id)s
     """
-    params = {
-        "order_id": order_id,
-        "buyer_id": buyer_id
-    }
-    result = db.execute_query(query, params)
-    return result
+    params = {"order_id": order_id, "buyer_id": buyer_id}
+    return db.execute_query(query, params)
 
-
-def cancel_order_input(db, order_id):
+def cancel_order(db, order_id):
     query = """
         UPDATE orders
         SET status = 'CANCELED'
         WHERE order_id = %(order_id)s
     """
-    params = {"order_id": order_id}
-    db.execute_insert_update_delete(query, params)
+    db.execute_insert_update_delete(query, {"order_id": order_id})
 
-def get_orders_for_buyer_db(db, buyerId, status=None, from_date=None, to_date=None, limit=10, offset=0):
-    buyer_check_query = """
-        SELECT 1
-        FROM orders
-        WHERE external_buyer_id = %(buyer_id)s
-        LIMIT 1
-    """
-
-    buyer_exists = db.execute_query(buyer_check_query, {"buyer_id": buyerId})
-
-    if not buyer_exists:
-        return None
-    
+def get_orders_for_buyer(db, buyerId, status=None, from_date=None, to_date=None, limit=10, offset=0):
     query = """
-       SELECT
+        SELECT
             o.order_id,
             o.status,
             o.order_date,
@@ -410,75 +298,60 @@ def get_orders_for_buyer_db(db, buyerId, status=None, from_date=None, to_date=No
             ON o.order_id = oi.order_id
         WHERE o.external_buyer_id = %(buyer_id)s
     """
-
-    params = {
-        "buyer_id": buyerId,
-        "limit": limit,
-        "offset": offset
-    }
+    params = {"buyer_id": buyerId, "limit": limit, "offset": offset}
 
     if status:
         query += " AND UPPER(o.status) = UPPER(%(status)s)"
         params["status"] = status.strip()
-
     if from_date:
         query += " AND o.order_date >= %(from_date)s::date"
         params["from_date"] = from_date
-
     if to_date:
         query += " AND o.order_date <= %(to_date)s::date"
         params["to_date"] = to_date
 
     query += """
         GROUP BY
-            o.order_id,
-            o.status,
-            o.order_date,
-            o.delivery_date,
-            o.currency_code
+            o.order_id, o.status, o.order_date, o.delivery_date, o.currency_code
         ORDER BY o.order_date DESC, o.order_id
         LIMIT %(limit)s
         OFFSET %(offset)s
     """
-    results = db.execute_query(query, params, fetch_all=True)
+    return db.execute_query(query, params, fetch_all=True)
 
-    orders = []
+def buyer_has_orders(db, buyer_id):
+    query = """
+        SELECT 1 FROM orders
+        WHERE external_buyer_id = %(buyer_id)s
+        LIMIT 1
+    """
+    return db.execute_query(query, {"buyer_id": buyer_id})
 
-    for row in results:
-        orders.append({
-            "orderId": str(row[0]),
-            "status": row[1],
-            "orderDate": row[2].isoformat() if row[2] else None,
-            "deliveryDate": row[3].isoformat() if row[3] else None,
-            "currencyCode": row[4],
-            "itemCount": row[5],
-            "totalAmount": str(row[6]) if row[6] is not None else "0"
-        })
-
-    return orders
+def get_cancelled_orders_for_buyer(db, buyer_id):
+    query = """
+        SELECT order_id FROM orders
+        WHERE external_buyer_id = %(buyer_id)s
+        AND status = 'CANCELED'
+    """
+    return db.execute_query(query, {"buyer_id": buyer_id}, fetch_all=True)
 
 def delete_order_documents(db, order_id):
     query = """
         DELETE FROM order_documents
         WHERE order_id = %(order_id)s
     """
-    params = {"order_id": order_id}
-    db.execute_insert_update_delete(query, params)
-
+    db.execute_insert_update_delete(query, {"order_id": order_id})
 
 def delete_order_items(db, order_id):
     query = """
         DELETE FROM order_items
         WHERE order_id = %(order_id)s
     """
-    params = {"order_id": order_id}
-    db.execute_insert_update_delete(query, params)
+    db.execute_insert_update_delete(query, {"order_id": order_id})
 
-
-def delete_order_input(db, order_id):
+def delete_order(db, order_id):
     query = """
         DELETE FROM orders
         WHERE order_id = %(order_id)s
     """
-    params = {"order_id": order_id}
-    db.execute_insert_update_delete(query, params)
+    db.execute_insert_update_delete(query, {"order_id": order_id})

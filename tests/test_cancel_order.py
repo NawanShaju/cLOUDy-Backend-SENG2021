@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from app.services.order_db import cancel_order_input
+from app.services.order_db import cancel_order
 from app.services.order_service import cancel_order_service
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def test_cancel_order_invalid(mock_db):
     result = cancel_order_service(mock_db, "buyer1", "order1")
 
     assert result["status"] == 409
-    assert "cannot be deleted" in result["error"]
+    assert "cannot be canceled" in result["error"]
 
 
 def test_cancel_order(mock_db):
@@ -52,8 +52,8 @@ def test_cancel_order(mock_db):
     assert result["orderId"] == "order1"
 
 
-def test_cancel_order_input(mock_db):
-    cancel_order_input(mock_db, "order1")
+def test_cancel_order(mock_db):
+    cancel_order(mock_db, "order1")
 
     mock_db.execute_insert_update_delete.assert_called_once()
 

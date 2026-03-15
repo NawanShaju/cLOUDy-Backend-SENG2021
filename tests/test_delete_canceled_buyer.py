@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from app.services.order_db import (
     delete_order_documents,
     delete_order_items,
-    delete_order_input
+    delete_order
 )
 from app.services.order_service import delete_buyers_all_cancelled_orders_service
 
@@ -64,8 +64,8 @@ def test_delete_order_items(mock_db):
     assert params["order_id"] == "order1"
 
 
-def test_delete_order_input(mock_db):
-    delete_order_input(mock_db, "order1")
+def test_delete_order(mock_db):
+    delete_order(mock_db, "order1")
 
     mock_db.execute_insert_update_delete.assert_called_once()
 

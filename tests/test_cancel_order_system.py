@@ -47,7 +47,7 @@ def mock_auth_db(monkeypatch):
         def execute_query(self, query, params):
             return [("dummy-key",)]
 
-    monkeypatch.setattr("app.services.apiKey.PostgresDB", lambda: FakeAuthDB())
+    monkeypatch.setattr("app.services.api_key.PostgresDB", lambda: FakeAuthDB())
 
 
 def valid_uuid():
@@ -155,4 +155,4 @@ def test_cancel_order_conflict(monkeypatch, client):
 
     assert response.status_code == 409
     data = response.get_json()
-    assert "cannot be deleted" in data["error"]
+    assert "cannot be canceled" in data["error"]

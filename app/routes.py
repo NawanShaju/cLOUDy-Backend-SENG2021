@@ -2,15 +2,13 @@ from flask import Blueprint, jsonify, request, Response
 from .services.validate_order import validate_order, validate_order_xml
 from .services.xml_generation import generate_xml
 from .services.api_key import validate_api_key
-from .services.order_db import (
-    get_order_details, 
-    get_orders_for_buyer_db, 
-    get_full_order_db,
-)
+from .services.order_db import get_full_order
 from .services.order_service import (
     create_order_service,
     update_order_service,
     cancel_order_service,
+    get_order_details_service,
+    get_orders_for_buyer_service,
     delete_buyers_all_cancelled_orders_service
 )
 from .services.xml_db import xml_to_db
@@ -124,11 +122,10 @@ def update_order(buyerId, orderId):
         if not result:
             return jsonify({"error": "Order not found"}), 404
         
-        full_order = get_full_order_db(db, buyerId, orderId)
+        full_order = get_full_order(db, buyerId, orderId)
         xml_string = generate_xml(full_order, orderId, buyerId)
         xml_to_db_update_cancel(db, xml_string, orderId)
     
-
     return Response(
         xml_string,
         mimetype='application/xml',
@@ -148,7 +145,7 @@ def get_order_by_id(buyerId, orderId):
 
     try:
         with PostgresDB() as db:
-            order = get_order_details(db, buyerId, orderId) 
+            order = get_order_details_service(db, buyerId, orderId) 
         if not order:
             return jsonify({
                 "status": 404,
@@ -236,7 +233,7 @@ def get_orders_for_buyer(buyerId):
             }), 400
         
         with PostgresDB() as db:
-            orders = get_orders_for_buyer_db(
+            orders = get_orders_for_buyer_service(
                 db,
                 buyerId,
                 status,
@@ -294,17 +291,8 @@ def delete_cancelled_orders(buyerId):
     with PostgresDB() as db:
         result = delete_buyers_all_cancelled_orders_service(db, buyerId)
    
-    if result.get("status") == 401:
-        return jsonify(result), 401
-
-    if result.get("status") == 404:
-        return jsonify(result), 404
-
-    if result.get("status") == 409:
-        return jsonify(result), 409
-
-    if result.get("status") == 500:
-        return jsonify(result), 500
+    if result.get("status") != 200:
+        return jsonify(result), result.get("status")
 
     return jsonify({
         "buyerId": buyerId,

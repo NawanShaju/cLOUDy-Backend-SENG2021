@@ -51,7 +51,7 @@ def mock_auth_db(monkeypatch):
         def execute_query(self, query, params):
             return [("dummy-key",)]  
 
-    monkeypatch.setattr("app.services.apiKey.PostgresDB", lambda: FakeAuthDB())
+    monkeypatch.setattr("app.services.api_key.PostgresDB", lambda: FakeAuthDB())
 
 
 def valid_uuid():
@@ -61,7 +61,7 @@ def valid_uuid():
 def test_update_order(monkeypatch, client):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
     monkeypatch.setattr("app.routes.update_order_service", lambda db, data, b, o: True)
-    monkeypatch.setattr("app.routes.get_full_order_db", lambda db, b, o: {
+    monkeypatch.setattr("app.routes.get_full_order", lambda db, b, o: {
         "order_date": "2026-03-07",
         "delivery_date": "2026-03-10",
         "currency_code": "AUD",
@@ -150,7 +150,7 @@ def test_update_order_invalid_product(monkeypatch, client):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
     monkeypatch.setattr("app.routes.update_order_service", fake_update_order_service)
 
-    monkeypatch.setattr("app.routes.get_full_order_db", lambda db, b, o: None)
+    monkeypatch.setattr("app.routes.get_full_order", lambda db, b, o: None)
     buyer_id = valid_uuid()
     order_id = valid_uuid()
 
