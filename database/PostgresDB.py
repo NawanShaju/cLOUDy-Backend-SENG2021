@@ -37,7 +37,6 @@ class PostgresDB:
             self.conn.close()
             self.conn = None
 
-
     def _validate_config(self):
         required_vars = {
             "DB_HOST": self.host,
@@ -51,8 +50,13 @@ class PostgresDB:
             raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
     def _connect(self):
-        if self.conn:
-            return self.conn
+        try:
+            if self.conn and not self.conn.closed:
+                self.conn.cursor().execute("SELECT 1")
+                return self.conn
+        except Exception:
+            self.conn = None
+
         try:
             self.conn = psycopg2.connect(
                 host=self.host,
@@ -60,6 +64,7 @@ class PostgresDB:
                 database=self.database,
                 user=self.username,
                 password=self.password,
+                connect_timeout=5
             )
             return self.conn
         except OperationalError as e:
