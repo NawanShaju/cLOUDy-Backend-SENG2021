@@ -10,7 +10,7 @@ class DummyDB:
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
-    def execute_query(self, query, params):
+    def execute_query(self, query, params, fetch_all=False):  # add fetch_all
         return [(
             "order1",
             params["buyer_id"],
@@ -85,7 +85,7 @@ def test_cancel_order_invalid_order_id(client):
 
 def test_cancel_order_not_found(monkeypatch, client):
     class EmptyDB(DummyDB):
-        def execute_query(self, query, params):
+        def execute_query(self, query, params, fetch_all=False):
             return None
 
     monkeypatch.setattr("app.routes.PostgresDB", lambda: EmptyDB())
@@ -105,7 +105,7 @@ def test_cancel_order_not_found(monkeypatch, client):
 
 def test_cancel_order_forbidden(monkeypatch, client):
     class WrongBuyerDB(DummyDB):
-        def execute_query(self, query, params):
+        def execute_query(self, query, params, fetch_all=False):  # add fetch_all
             return [(
                 "order1",
                 "different-buyer",
@@ -133,7 +133,7 @@ def test_cancel_order_forbidden(monkeypatch, client):
 
 def test_cancel_order_conflict(monkeypatch, client):
     class CancelledDB(DummyDB):
-        def execute_query(self, query, params):
+        def execute_query(self, query, params, fetch_all=False):
             return [(
                 "order1",
                 params["buyer_id"],

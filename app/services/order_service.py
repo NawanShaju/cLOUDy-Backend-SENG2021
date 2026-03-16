@@ -161,7 +161,7 @@ def cancel_order_service(db, buyer_id, order_id):
         return {"status": 404, "error": "Order not found"}
     
     order = result[0]
-
+    
     if order[1] != buyer_id:
         return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
     if order[6] in ("CANCELED", "PROCESSED", "FINALISED"):
