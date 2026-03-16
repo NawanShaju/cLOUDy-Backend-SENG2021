@@ -3,8 +3,6 @@ from psycopg2 import OperationalError, DatabaseError
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
-
 class PostgresDB:
     _instance = None
 
@@ -24,8 +22,6 @@ class PostgresDB:
         self.password = os.getenv("DB_PASSWORD")
         
         self.conn = None
-
-        self._validate_config()
         self._initialized = True
         
     def __enter__(self):
@@ -36,19 +32,6 @@ class PostgresDB:
         if self.conn:
             self.conn.close()
             self.conn = None
-
-
-    def _validate_config(self):
-        required_vars = {
-            "DB_HOST": self.host,
-            "DB_PORT": self.port,
-            "DB_NAME": self.database,
-            "DB_USERNAME": self.username,
-            "DB_PASSWORD": self.password,
-        }
-        missing_vars = [key for key, value in required_vars.items() if not value]
-        if missing_vars:
-            raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
     def _connect(self):
         if self.conn:

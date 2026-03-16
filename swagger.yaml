@@ -17,7 +17,7 @@ info:
     api-key: YOUR_API_KEY
 
 servers:
-  - url: http://cloudylb-504707632.us-east-1.elb.amazonaws.com/api
+  - url: http://cLOUDy-373805882.us-east-1.elb.amazonaws.com/api
 
 security:
   - ApiKeyAuth: []
@@ -618,10 +618,23 @@ components:
           example: "AUD"
         address:
           $ref: '#/components/schemas/Address'
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/OrderItem'
+        item:
+          $ref: '#/components/schemas/OrderItem'
+      example:
+        order_date: "2026-02-27"
+        delivery_date: "2026-03-10"
+        currency_code: "AUD"
+        address:
+          street: "436 George St"
+          city: "Sydney"
+          state: "NSW"
+          postal_code: "2000"
+          country_code: "AU"
+        item:
+          item_name: "Widget"
+          item_description: "Industrial widget"
+          quantity: 15
+          unit_price: 50
 
     Address:
       type: object

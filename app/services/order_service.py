@@ -132,10 +132,10 @@ def _resolve_updated_product(db, item):
 
 def update_order_service(db, data, buyerId, orderId):
     if data.get("item") and not data.get("item").get("product_id"):
-        return jsonify({"error": "please provide a valid product_id"}), 400
+        return {"error": "please provide a valid product_id"}, 400
     
     if data.get("item") and not is_valid_uuid(data.get("item").get("product_id")):
-        return jsonify({"error": "product_id most be a uuid"}), 400
+        return {"error": "product_id most be a uuid"}, 400
 
     if data.get("address"):
         address_id = _resolve_updated_address(db, data.get("address"), orderId)
@@ -145,11 +145,11 @@ def update_order_service(db, data, buyerId, orderId):
         try:
             product_id = _resolve_updated_product(db, data.get("item"))
         except ValueError as e:
-            return jsonify({"error": str(e)}), 400
+            return {"error": str(e)}, 400
 
         result = update_order_items(db, orderId, data.get("item"), product_id[0][0])
         if not result:
-            return jsonify({"error": "Not Updated, invalid product id or order id"}), 400
+            return {"error": "Not Updated, invalid product id or order id"}, 400
 
     order = update_order(db, data, buyerId, orderId)
     return order

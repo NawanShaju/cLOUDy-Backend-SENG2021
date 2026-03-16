@@ -50,8 +50,11 @@ def create_order(buyerId):
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
         
-    data["order_date"] = to_iso_date(data.get("order_date"))
-    data["delivery_date"] = to_iso_date(data.get("delivery_date"))
+    if data.get("order_date"):
+        data["order_date"] = to_iso_date(data.get("order_date"))
+    
+    if data.get("delivery_date"):
+        data["delivery_date"] = to_iso_date(data.get("delivery_date"))
     
     validate_error = validate_order(data, buyerId)
     

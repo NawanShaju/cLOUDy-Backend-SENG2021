@@ -11,8 +11,11 @@ def validate_order(data, buyerId):
     
     if not address:
         return "No address provided"
+    
+    if not isinstance(address, dict):
+        return "wrong type for address please provide a dict and look at the swagger"
 
-    for field in ["street", "city", "state", "postal_code"]:
+    for field in ["street", "city", "state", "postal_code", "country_code"]:
         if field not in address:
             return f"the required field {field} is missing"
                 
@@ -35,6 +38,10 @@ def validate_order(data, buyerId):
         items = [items]
     
     for item in items:
+
+        if not isinstance(item, dict):
+            return f"wrong type for order please provide a dict and look at the swagger"    
+        
         if not item.get("item_name"):
             return f"item_name is required."
         if "quantity" not in item or not isinstance(item["quantity"], int) or item["quantity"] <= 0:
