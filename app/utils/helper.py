@@ -1,6 +1,7 @@
 from dateutil.parser import parse
 from datetime import datetime
 from uuid import UUID
+import json
 
 def to_iso_date(date_input):
     
@@ -21,3 +22,10 @@ def is_valid_uuid(value: str) -> bool:
         return True
     except ValueError:
         return False
+    
+def is_json(myjson):
+    try:
+        json_object = json.loads(myjson)
+    except (ValueError, TypeError) as e:
+        return False
+    return True

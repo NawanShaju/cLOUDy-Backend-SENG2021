@@ -21,6 +21,7 @@ from database.PostgresDB import PostgresDB
 from flask import send_from_directory
 from flask_swagger_ui import get_swaggerui_blueprint
 from app.utils.extensions import limiter
+from app.utils.helper import is_json
 import os
 
 api = Blueprint("main", __name__)
@@ -290,6 +291,9 @@ def validate_xml():
         
         if not xml_data:
             return jsonify({"valid": False, "errors": ["Missing XML payload"]}), 400
+        
+        if is_json(xml_data):
+            return jsonify({"valid": False, "error": ["Input must be XML"]})
         
         valid, errors = validate_order_xml(xml_data)
 
