@@ -273,7 +273,7 @@ def get_order_by_id(db, buyer_id, order_id):
         WHERE order_id = %(order_id)s
     """
     params = {"order_id": order_id, "buyer_id": buyer_id}
-    return db.execute_query(query, params)
+    return db.execute_query(query, params, fetch_all=True)
 
 def cancel_order(db, order_id):
     query = """
