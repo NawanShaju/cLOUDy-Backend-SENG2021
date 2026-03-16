@@ -187,9 +187,9 @@ def update_order_items(db, order_id, item, product_id):
         UPDATE order_items
         SET
             quantity = COALESCE(%(quantity)s, quantity),
-            total_price = COALESCE(%(total_price)s, total_price)
+            total_price = COALESCE(%(total_price)s, total_price),
+            product_id = COALESCE(%(product_id)s, product_id)
         WHERE order_id = %(order_id)s
-        AND product_id = %(product_id)s
         RETURNING order_item_id
     """
     params = {
