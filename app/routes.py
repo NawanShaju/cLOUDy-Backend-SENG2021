@@ -169,7 +169,7 @@ def cancel_order(buyerId, orderId):
     with PostgresDB() as db:
         result = cancel_order_service(db, buyerId, orderId)
 
-    if result.get("status") != 200:
+    if result.get("status") != 200 and result.get("status") != 'CANCELED':
         return jsonify(result), result.get("status")
 
     return jsonify(result), 200
