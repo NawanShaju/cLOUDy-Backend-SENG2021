@@ -169,20 +169,8 @@ def cancel_order(buyerId, orderId):
     with PostgresDB() as db:
         result = cancel_order_service(db, buyerId, orderId)
 
-    if result.get("status") == 401:
-        return jsonify(result), 401
-    
-    if result.get("status") == 404:
-        return jsonify(result), 404
-
-    if result.get("status") == 403:
-        return jsonify(result), 403
-
-    if result.get("status") == 409:
-        return jsonify(result), 409
-
-    if result.get("status") == 500:
-        return jsonify(result), 500
+    if result.get("status") != 200:
+        return jsonify(result), result.get("status")
 
     return jsonify(result), 200
 
@@ -196,20 +184,8 @@ def delete_order_by_id(buyerId, orderId):
     with PostgresDB() as db:
         result = delete_order_service(db, buyerId, orderId)
 
-    if result.get("status") == 401:
-        return jsonify(result), 401
-
-    if result.get("status") == 404:
-        return jsonify(result), 404
-
-    if result.get("status") == 403:
-        return jsonify(result), 403
-
-    if result.get("status") == 409:
-        return jsonify(result), 409
-
-    if result.get("status") == 500:
-        return jsonify(result), 500
+    if result.get("status") != 200:
+        return jsonify(result), result.get("status")
 
     return jsonify(result), 200
 
