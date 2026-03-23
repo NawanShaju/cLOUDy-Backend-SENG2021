@@ -11,7 +11,8 @@ def valid_data():
             "street": "123 Main St",
             "city": "Sydney",
             "state": "NSW",
-            "postal_code": "2000"
+            "postal_code": "2000",
+            "country_code": "AU"
         },
         "items": [
             {
