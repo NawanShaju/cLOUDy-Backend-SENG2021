@@ -631,6 +631,7 @@ components:
           postal_code: "2000"
           country_code: "AU"
         item:
+          product_id: "2acd6acf-1d3d-405b-8177-eb110e46f712"
           item_name: "Widget"
           item_description: "Industrial widget"
           quantity: 15
