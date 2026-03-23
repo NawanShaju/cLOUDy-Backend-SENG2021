@@ -15,4 +15,4 @@ COPY . .
 
 EXPOSE 5001
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "1", "--timeout", "120", "run:app"]
+CMD ["python", "run.py"]
