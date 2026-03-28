@@ -20,4 +20,5 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "flask-limiter>=4.1.1",
     "waitress>=3.0.2",
+    "flask-cors>=6.0.2",
 ]

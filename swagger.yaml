@@ -6,6 +6,13 @@ info:
   description: |
     This is the UBL ordering API.
 
+    ### CORS
+
+    CORS is enabled for cross-origin requests. This API uses API key authentication, 
+    so clients should not send credentials (e.g. cookies or `withCredentials`); include the `api-key` header only. 
+    Do not set withCredentials/Credentials to true
+
+
     🔐 Authentication  
     All endpoints except `/get-key`, `/health`, and `/v1/validate-xml` require an API key.
 
