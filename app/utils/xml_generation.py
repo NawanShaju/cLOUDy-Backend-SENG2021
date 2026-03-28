@@ -18,8 +18,27 @@ def cbc(tag):
  
 def cac(tag):
     return f"{{{NS_CAC}}}{tag}"
- 
- 
+
+def build_address_element(parent_el, address_data):
+    if address_data.get("street"):
+        etree.SubElement(parent_el, cbc("StreetName")).text = address_data["street"]
+    if address_data.get("building_name"):
+        etree.SubElement(parent_el, cbc("BuildingName")).text = address_data["building_name"]
+    if address_data.get("building_number"):
+        etree.SubElement(parent_el, cbc("BuildingNumber")).text = address_data["building_number"]
+    if address_data.get("city"):
+        etree.SubElement(parent_el, cbc("CityName")).text = address_data["city"]
+    if address_data.get("postal_code"):
+        etree.SubElement(parent_el, cbc("PostalZone")).text = address_data["postal_code"]
+    if address_data.get("state"):
+        etree.SubElement(parent_el, cbc("CountrySubentity")).text = address_data["state"]
+    if address_data.get("address_line"):
+        addr_line = etree.SubElement(parent_el, cac("AddressLine"))
+        etree.SubElement(addr_line, cbc("Line")).text = address_data["address_line"]
+    if address_data.get("country_code"):
+        country = etree.SubElement(parent_el, cac("Country"))
+        etree.SubElement(country, cbc("IdentificationCode")).text = address_data["country_code"]
+
 def generate_xml(data, orderId, buyerId):
     root = etree.Element("Order", nsmap=NSMAP)
  
@@ -42,17 +61,7 @@ def generate_xml(data, orderId, buyerId):
     address_data = data.get("address", {})
     if address_data:
         postal = etree.SubElement(buyer_party_inner, cac("PostalAddress"))
-        if address_data.get("street"):
-            etree.SubElement(postal, cbc("StreetName")).text = address_data["street"]
-        if address_data.get("city"):
-            etree.SubElement(postal, cbc("CityName")).text = address_data["city"]
-        if address_data.get("state"):
-            etree.SubElement(postal, cbc("CountrySubentity")).text = address_data["state"]
-        if address_data.get("postal_code"):
-            etree.SubElement(postal, cbc("PostalZone")).text = address_data["postal_code"]
-        if address_data.get("country_code"):
-            country = etree.SubElement(postal, cac("Country"))
-            etree.SubElement(country, cbc("IdentificationCode")).text = address_data["country_code"]
+        build_address_element(postal, address_data)
  
     seller_party = etree.SubElement(root, cac("SellerSupplierParty"))
     seller_party_inner = etree.SubElement(seller_party, cac("Party"))
@@ -62,8 +71,19 @@ def generate_xml(data, orderId, buyerId):
     delivery_date_str = data.get("delivery_date", "")
     if delivery_date_str:
         delivery = etree.SubElement(root, cac("Delivery"))
+        
+        if address_data:
+            delivery_address = etree.SubElement(delivery, cac("DeliveryAddress"))
+            build_address_element(delivery_address, address_data)
+
         requested = etree.SubElement(delivery, cac("RequestedDeliveryPeriod"))
+        if data.get("delivery_start_date"):
+            etree.SubElement(requested, cbc("StartDate")).text = data["delivery_start_date"]
+        if data.get("delivery_start_time"):
+            etree.SubElement(requested, cbc("StartTime")).text = data["delivery_start_time"]
         etree.SubElement(requested, cbc("EndDate")).text = delivery_date_str
+        if data.get("delivery_end_time"):
+            etree.SubElement(requested, cbc("EndTime")).text = data["delivery_end_time"]
  
     currency_code = data.get("currency_code", "AUD")
     items_data = data.get("items", [])
