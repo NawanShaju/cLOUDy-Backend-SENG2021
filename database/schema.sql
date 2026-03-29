@@ -42,7 +42,8 @@ CREATE TABLE addresses (
 -- =========================================
 CREATE TABLE orders (
     order_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    external_buyer_id NOT NULL,
+    external_buyer_id,
+    buyer_id UUID,
     address_id UUID NOT NULL,
     order_date DATE,
     delivery_date DATE,
@@ -53,6 +54,9 @@ CREATE TABLE orders (
 
     CONSTRAINT fk_orders_address
         FOREIGN KEY (address_id) REFERENCES addresses(address_id)
+    
+    CONSTRAINT fk_orders_buyer
+        FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id);
 );
 
 -- =========================================
@@ -88,6 +92,51 @@ CREATE TABLE order_documents (
         FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
 );
 
+-- =========================================
+-- BUYERS TABLE
+-- =========================================
+CREATE TABLE buyers (
+    buyer_id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    customer_assigned_account_id    VARCHAR(100),
+    supplier_assigned_account_id    VARCHAR(100),
+
+    party_name                      VARCHAR(255),
+
+    address_id                      UUID,
+
+    tax_scheme_id                   UUID,
+
+    contact_name                    VARCHAR(255),
+    contact_telephone               VARCHAR(50),
+    contact_telefax                 VARCHAR(50),
+    contact_email                   VARCHAR(255),
+
+    created_at                      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at                      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_buyers_address
+        FOREIGN KEY (address_id) REFERENCES addresses(address_id),
+
+    CONSTRAINT fk_buyers_tax_scheme
+        FOREIGN KEY (tax_scheme_id) REFERENCES tax_schemes(tax_scheme_id)
+);
+
+-- =========================================
+-- TAX SCHEMES TABLE
+-- =========================================
+CREATE TABLE tax_schemes (
+    tax_scheme_id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    registration_name       VARCHAR(255),
+    company_id              VARCHAR(100),
+    exemption_reason        VARCHAR(255),
+    scheme_id               VARCHAR(50),
+    tax_type_code           VARCHAR(50),
+
+    created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- =========================================
 -- INDEXES
@@ -97,3 +146,8 @@ CREATE INDEX idx_orders_address_id ON orders(address_id);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_product_id ON order_items(product_id);
 CREATE INDEX idx_order_documents_order_id ON order_documents(order_id);
+CREATE INDEX idx_tax_schemes_company_id ON tax_schemes(company_id);
+CREATE INDEX idx_buyers_customer_account_id ON buyers(customer_assigned_account_id);
+CREATE INDEX idx_buyers_address_id ON buyers(address_id);
+CREATE INDEX idx_buyers_tax_scheme_id ON buyers(tax_scheme_id);
+CREATE INDEX idx_orders_buyer_id ON orders(buyer_id);
