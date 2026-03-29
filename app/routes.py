@@ -26,7 +26,7 @@ from app.utils.extensions import limiter
 from app.utils.helper import is_json
 import os
 
-api = Blueprint("main", __name__)
+api = Blueprint("v1", __name__)
 
 SWAGGER_URL = "/swagger"
 API_URL = "/swagger.yaml"

@@ -77,6 +77,36 @@ def insert_order(db, data, buyerId, address_id):
     }
     return db.execute_insert_update_delete(query, params)
 
+def insert_order_v2(db, data, buyerId, address_id):
+    query = """
+        INSERT INTO orders (
+            buyer_id,
+            address_id,
+            order_date,
+            delivery_date,
+            currency_code,
+            status
+        )
+        VALUES (
+            %(buyerId)s,
+            %(address_id)s,
+            %(order_date)s,
+            %(delivery_date)s,
+            %(currency_code)s,
+            %(status)s
+        )
+        RETURNING order_id
+    """
+    params = {
+        "buyerId":       buyerId,
+        "address_id":    address_id,
+        "order_date":    data.get("order_date"),
+        "delivery_date": data.get("delivery_date"),
+        "currency_code": data.get("currency_code"),
+        "status":        "CREATED"
+    }
+    return db.execute_insert_update_delete(query, params)
+
 def insert_product(db, items):
     query = """
         INSERT INTO products (

@@ -65,3 +65,63 @@ def insert_buyer(db, data, address_id, tax_scheme_id):
         "contact_email":                contact.get("email"),
     }
     return db.execute_insert_update_delete(query, params)
+
+def get_buyer_by_id(db, buyer_id):
+    query = """
+        SELECT
+            b.buyer_id,
+            b.customer_assigned_account_id,
+            b.supplier_assigned_account_id,
+            b.party_name,
+            b.contact_name,
+            b.contact_telephone,
+            b.contact_telefax,
+            b.contact_email,
+            b.tax_scheme_id,
+            t.registration_name,
+            t.company_id,
+            t.exemption_reason,
+            t.scheme_id,
+            t.tax_type_code,
+            a.street,
+            a.city,
+            a.state,
+            a.postal_code,
+            a.country_code
+        FROM buyers b
+        LEFT JOIN addresses a ON b.address_id = a.address_id
+        LEFT JOIN tax_schemes t ON b.tax_scheme_id = t.tax_scheme_id
+        WHERE b.buyer_id = %(buyer_id)s
+    """
+    result = db.execute_query(query, {"buyer_id": buyer_id})
+    if not result:
+        return None
+
+    row = result
+    return {
+        "buyer_id":                      str(row[0]),
+        "customer_assigned_account_id":  row[1],
+        "supplier_assigned_account_id":  row[2],
+        "party_name":                    row[3],
+        "contact": {
+            "name":      row[4],
+            "telephone": row[5],
+            "telefax":   row[6],
+            "email":     row[7],
+        },
+        "tax_scheme": {
+            "registration_name": row[9],
+            "company_id":        row[10],
+            "exemption_reason":  row[11],
+            "scheme_id":         row[12],
+            "tax_type_code":     row[13],
+        } if row[8] else None,
+        "address": {
+            "street":       row[14],
+            "city":         row[15],
+            "state":        row[16],
+            "postal_code":  row[17],
+            "country_code": row[18],
+        } if row[14] else None,
+    }
+    
