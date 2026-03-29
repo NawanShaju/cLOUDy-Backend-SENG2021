@@ -1,9 +1,11 @@
 from flask import jsonify
+from app.services.db_services.buyer_db import get_buyer_by_id
 from .db_services.xml_db import get_order_xml
 from .db_services.order_db import (
     get_full_order,
     get_order_details,
     insert_address,
+    insert_order_v2,
     insert_product,
     insert_order,
     insert_order_item,
@@ -103,14 +105,33 @@ def create_order_service(db, data, buyerId):
 
     return order_id
 
+def create_order_v2_service(db, data, buyerId):
+    if not data:
+        return {"error": "Invalid Json Provided"}, 400
+
+    buyer_data = get_buyer_by_id(db, buyerId)
+    
+    if not buyer_data:
+        return {"error": "Buyer not found"}, 404
+
+    address_id = insert_address(db, data.get("address"))
+    product_map = insert_product(db, data.get("items"))
+    order_id = insert_order_v2(db, data, buyerId, address_id[0][0])
+    insert_order_item(db, data.get("items"), order_id[0][0], product_map)
+
+    return {
+        "order_id": order_id[0][0],
+        "buyer_data": buyer_data
+    }
+
 def _resolve_updated_address(db, incoming_address, orderId):
     existing = get_existing_address_by_order(db, orderId)
 
     merged = {
-        "street":       incoming_address.get("street")       if incoming_address.get("street")       is not None else existing[0],
-        "city":         incoming_address.get("city")         if incoming_address.get("city")         is not None else existing[1],
-        "state":        incoming_address.get("state")        if incoming_address.get("state")        is not None else existing[2],
-        "postal_code":  incoming_address.get("postal_code")  if incoming_address.get("postal_code")  is not None else existing[3],
+        "street": incoming_address.get("street") if incoming_address.get("street") is not None else existing[0],
+        "city": incoming_address.get("city") if incoming_address.get("city") is not None else existing[1],
+        "state": incoming_address.get("state") if incoming_address.get("state") is not None else existing[2],
+        "postal_code": incoming_address.get("postal_code") if incoming_address.get("postal_code") is not None else existing[3],
         "country_code": incoming_address.get("country_code") if incoming_address.get("country_code") is not None else existing[4],
     }
 
