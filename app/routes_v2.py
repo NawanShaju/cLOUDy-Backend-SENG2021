@@ -4,7 +4,7 @@ from app.utils.xml_generation import generate_xml_v2
 from .services.validate_order import validate_order
 from .services.api_key import validate_api_key
 from .services.db_services.xml_db import xml_to_db
-from .utils.helper import to_iso_date
+from .utils.helper import is_valid_uuid, to_iso_date
 from database.PostgresDB import PostgresDB
 from app.utils.extensions import limiter
 
@@ -14,6 +14,9 @@ api = Blueprint("v2", __name__)
 @validate_api_key
 @limiter.limit("10 per minute")
 def create_order_v2(buyerId):
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+    
     data = request.get_json()
 
     if not data:
