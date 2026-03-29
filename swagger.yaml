@@ -34,6 +34,8 @@ tags:
     description: Operations for authentication
   - name: Orders
     description: Operations about the orders
+  - name: Buyers
+    description: Operations about buyers
   - name: Validation
     description: Operations for XML validation
   - name: System
@@ -102,6 +104,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
+
+  /v1/buyer:
+    post:
+      tags:
+        - Buyers
+      summary: Create buyer
+      description: Creates a new buyer with optional address, tax scheme, and contact details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBuyerRequest'
+
+      responses:
+        "201":
+          description: Buyer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateBuyerResponse'
+
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
 
   /v1/buyer/{buyerId}/order:
     post:
@@ -581,6 +625,74 @@ components:
         apikey:
           type: string
           example: "ubl_sk_b7c4c5e8a9d34f6c9b8e21d7a4f12345"
+
+    CreateBuyerRequest:
+      type: object
+      required:
+        - customer_assigned_account_id
+        - party_name
+      properties:
+        customer_assigned_account_id:
+          type: string
+          example: "XFB01"
+        supplier_assigned_account_id:
+          type: string
+          example: "GT00978567"
+        party_name:
+          type: string
+          example: "IYT Corporation"
+        address:
+          $ref: '#/components/schemas/Address'
+        tax_scheme:
+          $ref: '#/components/schemas/TaxScheme'
+        contact:
+          $ref: '#/components/schemas/Contact'
+
+    CreateBuyerResponse:
+      type: object
+      properties:
+        buyerId:
+          type: string
+          format: uuid
+          example: "3f7a2c1e-4b5d-4e6f-9a8b-1c2d3e4f5a6b"
+        message:
+          type: string
+          example: "Buyer created successfully"
+
+    TaxScheme:
+      type: object
+      properties:
+        registration_name:
+          type: string
+          example: "Bridgtow District Council"
+        company_id:
+          type: string
+          example: "12356478"
+        exemption_reason:
+          type: string
+          example: "Local Authority"
+        scheme_id:
+          type: string
+          example: "UK VAT"
+        tax_type_code:
+          type: string
+          example: "VAT"
+
+    Contact:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Mr Fred Churchill"
+        telephone:
+          type: string
+          example: "0127 2653214"
+        telefax:
+          type: string
+          example: "0127 2653215"
+        email:
+          type: string
+          example: "fred@iytcorporation.gov.uk"
 
     OrderRequest:
       type: object
