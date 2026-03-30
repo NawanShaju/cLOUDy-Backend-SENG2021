@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from flask import Flask
 from app.services.order_service import create_order_service
+from app.services.order_service import create_order_v2_service
 from app.services.db_services.order_db import (
     insert_address,
     insert_product,
@@ -148,3 +149,71 @@ def test_insert_order_item_passes_correct_product_id(mock_db):
     insert_order_item(mock_db, items, 999, product_map)
     params = mock_db.execute_insert_update_delete.call_args[0][1]
     assert params["product_id"] == 101
+    
+# ––––––––––––––––––––––––––––––––––––––––––––––– create_order_v2_service ────────────────────────────────────────────────────    
+    
+@pytest.fixture
+def valid_order_data():
+    return {
+        "order_date": "2024-01-15",
+        "delivery_date": "2024-01-20",
+        "currency_code": "AUD",
+        "address": {
+            "street": "123 Main St", "city": "Sydney",
+            "state": "NSW", "postal_code": "2000", "country_code": "AU"
+        },
+        "items": [
+            {"item_name": "Widget A", "item_description": "A widget",
+             "unit_price": 10.00, "quantity": 2}
+        ]
+    }
+ 
+ 
+def test_create_order_v2_no_data_returns_400(mock_db):
+    result = create_order_v2_service(mock_db, None, "buyer-001")
+    assert isinstance(result, tuple)
+    assert result[1] == 400
+ 
+ 
+def test_create_order_v2_no_data_returns_error(mock_db):
+    result = create_order_v2_service(mock_db, None, "buyer-001")
+    assert "error" in result[0]
+ 
+ 
+def test_create_order_v2_buyer_not_found_returns_404(monkeypatch, mock_db, valid_order_data):
+    monkeypatch.setattr(
+        "app.services.order_service.get_buyer_by_id",
+        lambda db, buyer_id: None
+    )
+    result = create_order_v2_service(mock_db, valid_order_data, "buyer-001")
+    assert isinstance(result, tuple)
+    assert result[1] == 404
+    assert result[0]["error"] == "Buyer not found"
+ 
+ 
+def test_create_order_v2_returns_order_id_and_buyer_data(monkeypatch, mock_db, valid_order_data):
+    fake_buyer = {
+        "buyer_id": "buyer-001",
+        "party_name": "Test Corp",
+        "address": None,
+        "contact": None,
+        "tax_scheme": None,
+        "customer_assigned_account_id": "ACC01",
+        "supplier_assigned_account_id": None,
+    }
+    monkeypatch.setattr("app.services.order_service.get_buyer_by_id", lambda db, b: fake_buyer)
+    monkeypatch.setattr("app.services.order_service.insert_address", lambda db, a: [("addr-id",)])
+    monkeypatch.setattr("app.services.order_service.insert_product", lambda db, i: {"Widget A": 101})
+    monkeypatch.setattr("app.services.order_service.insert_order_v2", lambda db, d, b, a: [("order-999",)])
+    monkeypatch.setattr("app.services.order_service.insert_order_item", lambda db, i, o, p: None)
+ 
+    result = create_order_v2_service(mock_db, valid_order_data, "buyer-001")
+    assert isinstance(result, dict)
+    assert result["order_id"] == "order-999"
+    assert result["buyer_data"] == fake_buyer
+ 
+ 
+def test_create_order_v2_does_not_touch_db_when_no_data(mock_db):
+    create_order_v2_service(mock_db, None, "buyer-001")
+    mock_db.execute_insert_update_delete.assert_not_called()
+    mock_db.execute_query.assert_not_called()
