@@ -1,5 +1,6 @@
 from flask import jsonify
 from app.services.db_services.buyer_db import get_buyer_by_id
+from app.services.db_services.seller_db import get_seller_by_id
 from .db_services.xml_db import get_order_xml
 from .db_services.order_db import (
     get_full_order,
@@ -114,6 +115,13 @@ def create_order_v2_service(db, data, buyerId):
     if not buyer_data:
         return {"error": "Buyer not found"}, 404
 
+    seller_data = None
+    seller_id = data.get("seller_id")
+    if seller_id:
+        seller_data = get_seller_by_id(db, seller_id)
+        if not seller_data:
+            return {"error": "Seller not found"}, 404
+
     address_id = insert_address(db, data.get("address"))
     product_map = insert_product(db, data.get("items"))
     order_id = insert_order_v2(db, data, buyerId, address_id[0][0])
@@ -121,7 +129,8 @@ def create_order_v2_service(db, data, buyerId):
 
     return {
         "order_id": order_id[0][0],
-        "buyer_data": buyer_data
+        "buyer_data": buyer_data,
+        "seller_data": seller_data,
     }
 
 def _resolve_updated_address(db, incoming_address, orderId):

@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, Response
-
 from app.services.buyer_service import create_buyer_service
+from app.services.seller_service import create_seller_service
 from .services.validate_order import validate_order, validate_order_xml
 from .utils.xml_generation import generate_xml
 from .services.api_key import validate_api_key
@@ -119,6 +119,24 @@ def create_buyer():
         "buyerId": result["buyer_id"],
         "message": "Buyer created successfully"
     }), 201
+    
+@api.route("/v1/seller", methods=["POST"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def create_seller():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid Json Provided"}), 400
+ 
+    with PostgresDB() as db:
+        result = create_seller_service(db, data)
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+ 
+        return jsonify({
+            "sellerId": result["seller_id"],
+            "message": "Seller created successfully"
+        }), 201
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["PUT"])
 @validate_api_key
