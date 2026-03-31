@@ -76,30 +76,29 @@ def get_seller_by_id(db, seller_id):
     if not result:
         return None
 
-    row = result
     return {
-        "seller_id":                     str(row[0]),
-        "customer_assigned_account_id":  row[1],
-        "supplier_assigned_account_id":  row[2],
-        "party_name":                    row[3],
+        "seller_id":                     str(result[0]),
+        "customer_assigned_account_id":  result[1],
+        "supplier_assigned_account_id":  result[2],
+        "party_name":                    result[3],
         "contact": {
-            "name":      row[4],
-            "telephone": row[5],
-            "telefax":   row[6],
-            "email":     row[7],
+            "name":      result[4],
+            "telephone": result[5],
+            "telefax":   result[6],
+            "email":     result[7],
         },
         "tax_scheme": {
-            "registration_name": row[9],
-            "company_id":        row[10],
-            "exemption_reason":  row[11],
-            "scheme_id":         row[12],
-            "tax_type_code":     row[13],
-        } if row[8] else None,
+            "registration_name": result[9],
+            "company_id":        result[10],
+            "exemption_reason":  result[11],
+            "scheme_id":         result[12],
+            "tax_type_code":     result[13],
+        } if result[8] else None,
         "address": {
-            "street":       row[14],
-            "city":         row[15],
-            "state":        row[16],
-            "postal_code":  row[17],
-            "country_code": row[18],
-        } if row[14] else None,
+            "street":       result[14],
+            "city":         result[15],
+            "state":        result[16],
+            "postal_code":  result[17],
+            "country_code": result[18],
+        } if result[14] else None,
     }

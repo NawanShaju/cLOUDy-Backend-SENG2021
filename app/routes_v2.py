@@ -28,6 +28,10 @@ def create_order_v2(buyerId):
     if data.get("delivery_date"):
         data["delivery_date"] = to_iso_date(data.get("delivery_date"))
 
+    seller_id = data.get("seller_id")
+    if seller_id and not is_valid_uuid(seller_id):
+        return jsonify({"error": "seller_id must be a valid UUID"}), 400
+ 
     validate_error = validate_order(data, buyerId)
     if validate_error:
         return jsonify({"error": validate_error}), 400
@@ -40,13 +44,10 @@ def create_order_v2(buyerId):
 
         order_id = result["order_id"]
         buyer_data = result["buyer_data"]
-
-        xml_string = generate_xml_v2(data, order_id, buyerId, buyer_data)
+        seller_data = result["seller_data"]
+ 
+        xml_string = generate_xml_v2(data, order_id, buyerId, buyer_data, seller_data)
         xml_to_db(db, xml_string, order_id)
-
-    return Response(
-        xml_string,
-        mimetype='application/xml',
-        status=200
-    )
-    
+ 
+        return Response(xml_string, mimetype="application/xml", status=200)
+ 

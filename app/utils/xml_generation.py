@@ -19,7 +19,7 @@ def cbc(tag):
 def cac(tag):
     return f"{{{NS_CAC}}}{tag}"
 
-def build_address_element(parent_el, address_data):
+def _build_address_element(parent_el, address_data):
     if address_data.get("street"):
         etree.SubElement(parent_el, cbc("StreetName")).text = address_data["street"]
     if address_data.get("building_name"):
@@ -38,6 +38,34 @@ def build_address_element(parent_el, address_data):
     if address_data.get("country_code"):
         country = etree.SubElement(parent_el, cac("Country"))
         etree.SubElement(country, cbc("IdentificationCode")).text = address_data["country_code"]
+        
+def _build_tax_scheme(parent, tax):
+    """Append a PartyTaxScheme block onto parent."""
+    party_tax = etree.SubElement(parent, cac("PartyTaxScheme"))
+    if tax.get("registration_name"):
+        etree.SubElement(party_tax, cbc("RegistrationName")).text = tax["registration_name"]
+    if tax.get("company_id"):
+        etree.SubElement(party_tax, cbc("CompanyID")).text        = tax["company_id"]
+    if tax.get("exemption_reason"):
+        etree.SubElement(party_tax, cbc("ExemptionReason")).text  = tax["exemption_reason"]
+    tax_scheme_el = etree.SubElement(party_tax, cac("TaxScheme"))
+    if tax.get("scheme_id"):
+        etree.SubElement(tax_scheme_el, cbc("ID")).text           = tax["scheme_id"]
+    if tax.get("tax_type_code"):
+        etree.SubElement(tax_scheme_el, cbc("TaxTypeCode")).text  = tax["tax_type_code"]
+ 
+ 
+def _build_contact(parent, contact):
+    """Append a Contact block onto parent."""
+    contact_el = etree.SubElement(parent, cac("Contact"))
+    if contact.get("name"):
+        etree.SubElement(contact_el, cbc("Name")).text          = contact["name"]
+    if contact.get("telephone"):
+        etree.SubElement(contact_el, cbc("Telephone")).text     = contact["telephone"]
+    if contact.get("telefax"):
+        etree.SubElement(contact_el, cbc("Telefax")).text       = contact["telefax"]
+    if contact.get("email"):
+        etree.SubElement(contact_el, cbc("ElectronicMail")).text = contact["email"]
 
 def generate_xml(data, orderId, buyerId):
     root = etree.Element("Order", nsmap=NSMAP)
@@ -61,7 +89,7 @@ def generate_xml(data, orderId, buyerId):
     address_data = data.get("address", {})
     if address_data:
         postal = etree.SubElement(buyer_party_inner, cac("PostalAddress"))
-        build_address_element(postal, address_data)
+        _build_address_element(postal, address_data)
  
     seller_party = etree.SubElement(root, cac("SellerSupplierParty"))
     seller_party_inner = etree.SubElement(seller_party, cac("Party"))
@@ -74,7 +102,7 @@ def generate_xml(data, orderId, buyerId):
         
         if address_data:
             delivery_address = etree.SubElement(delivery, cac("DeliveryAddress"))
-            build_address_element(delivery_address, address_data)
+            _build_address_element(delivery_address, address_data)
 
         requested = etree.SubElement(delivery, cac("RequestedDeliveryPeriod"))
         if data.get("delivery_start_date"):
@@ -144,7 +172,7 @@ def generate_xml(data, orderId, buyerId):
     
     return xml_bytes
 
-def generate_xml_v2(data, orderId, buyerId, buyer_data):
+def generate_xml_v2(data, orderId, buyerId, buyer_data, seller_data=None):
     root = etree.Element("Order", nsmap=NSMAP)
 
     etree.SubElement(root, cbc("UBLVersionID")).text = "2.1"
@@ -153,16 +181,16 @@ def generate_xml_v2(data, orderId, buyerId, buyer_data):
     etree.SubElement(root, cbc("IssueDate")).text = data.get(
         "order_date", datetime.now(timezone.utc).date().isoformat()
     )
-    etree.SubElement(root, cbc("DocumentCurrencyCode")).text = data.get(
-        "currency_code", "AUD"
-    )
+    etree.SubElement(root, cbc("DocumentCurrencyCode")).text = data.get("currency_code", "AUD")
 
     buyer_party = etree.SubElement(root, cac("BuyerCustomerParty"))
 
     if buyer_data.get("customer_assigned_account_id"):
-        etree.SubElement(buyer_party, cbc("CustomerAssignedAccountID")).text = buyer_data["customer_assigned_account_id"]
+        etree.SubElement(buyer_party, cbc("CustomerAssignedAccountID")).text = \
+            buyer_data["customer_assigned_account_id"]
     if buyer_data.get("supplier_assigned_account_id"):
-        etree.SubElement(buyer_party, cbc("SupplierAssignedAccountID")).text = buyer_data["supplier_assigned_account_id"]
+        etree.SubElement(buyer_party, cbc("SupplierAssignedAccountID")).text = \
+            buyer_data["supplier_assigned_account_id"]
 
     buyer_party_inner = etree.SubElement(buyer_party, cac("Party"))
 
@@ -175,48 +203,56 @@ def generate_xml_v2(data, orderId, buyerId, buyer_data):
 
     if buyer_data.get("address"):
         postal = etree.SubElement(buyer_party_inner, cac("PostalAddress"))
-        build_address_element(postal, buyer_data["address"])
+        _build_address_element(postal, buyer_data["address"])
 
     if buyer_data.get("tax_scheme"):
-        tax = buyer_data["tax_scheme"]
-        party_tax = etree.SubElement(buyer_party_inner, cac("PartyTaxScheme"))
-        if tax.get("registration_name"):
-            etree.SubElement(party_tax, cbc("RegistrationName")).text = tax["registration_name"]
-        if tax.get("company_id"):
-            etree.SubElement(party_tax, cbc("CompanyID")).text = tax["company_id"]
-        if tax.get("exemption_reason"):
-            etree.SubElement(party_tax, cbc("ExemptionReason")).text = tax["exemption_reason"]
-        tax_scheme_el = etree.SubElement(party_tax, cac("TaxScheme"))
-        if tax.get("scheme_id"):
-            etree.SubElement(tax_scheme_el, cbc("ID")).text = tax["scheme_id"]
-        if tax.get("tax_type_code"):
-            etree.SubElement(tax_scheme_el, cbc("TaxTypeCode")).text = tax["tax_type_code"]
+        _build_tax_scheme(buyer_party_inner, buyer_data["tax_scheme"])
 
     if buyer_data.get("contact"):
-        contact = buyer_data["contact"]
-        contact_el = etree.SubElement(buyer_party_inner, cac("Contact"))
-        if contact.get("name"):
-            etree.SubElement(contact_el, cbc("Name")).text = contact["name"]
-        if contact.get("telephone"):
-            etree.SubElement(contact_el, cbc("Telephone")).text = contact["telephone"]
-        if contact.get("telefax"):
-            etree.SubElement(contact_el, cbc("Telefax")).text = contact["telefax"]
-        if contact.get("email"):
-            etree.SubElement(contact_el, cbc("ElectronicMail")).text = contact["email"]
+        _build_contact(buyer_party_inner, buyer_data["contact"])
 
-    seller_party = etree.SubElement(root, cac("SellerSupplierParty"))
-    seller_party_inner = etree.SubElement(seller_party, cac("Party"))
-    seller_name_el = etree.SubElement(seller_party_inner, cac("PartyName"))
-    etree.SubElement(seller_name_el, cbc("Name")).text = data.get("supplier", "")
-
-    address_data = data.get("address", {})
+    seller_party       = etree.SubElement(root, cac("SellerSupplierParty"))
+ 
+    if seller_data:
+        if seller_data.get("customer_assigned_account_id"):
+            etree.SubElement(seller_party, cbc("CustomerAssignedAccountID")).text = \
+                seller_data["customer_assigned_account_id"]
+        if seller_data.get("supplier_assigned_account_id"):
+            etree.SubElement(seller_party, cbc("SupplierAssignedAccountID")).text = \
+                seller_data["supplier_assigned_account_id"]
+ 
+        seller_party_inner = etree.SubElement(seller_party, cac("Party"))
+ 
+        if seller_data.get("party_name"):
+            seller_name_el = etree.SubElement(seller_party_inner, cac("PartyName"))
+            etree.SubElement(seller_name_el, cbc("Name")).text = seller_data["party_name"]
+ 
+        seller_party_id = etree.SubElement(seller_party_inner, cac("PartyIdentification"))
+        etree.SubElement(seller_party_id, cbc("ID")).text = seller_data["seller_id"]
+ 
+        if seller_data.get("address"):
+            postal = etree.SubElement(seller_party_inner, cac("PostalAddress"))
+            _build_address_element(postal, seller_data["address"])
+ 
+        if seller_data.get("tax_scheme"):
+            _build_tax_scheme(seller_party_inner, seller_data["tax_scheme"])
+ 
+        if seller_data.get("contact"):
+            _build_contact(seller_party_inner, seller_data["contact"])
+ 
+    else:
+        seller_party_inner = etree.SubElement(seller_party, cac("Party"))
+        seller_name_el     = etree.SubElement(seller_party_inner, cac("PartyName"))
+        etree.SubElement(seller_name_el, cbc("Name")).text = data.get("supplier", "")
+ 
+    address_data      = data.get("address", {})
     delivery_date_str = data.get("delivery_date", "")
     if delivery_date_str:
         delivery = etree.SubElement(root, cac("Delivery"))
 
         if address_data:
             delivery_address = etree.SubElement(delivery, cac("DeliveryAddress"))
-            build_address_element(delivery_address, address_data)
+            _build_address_element(delivery_address, address_data)
 
         requested = etree.SubElement(delivery, cac("RequestedDeliveryPeriod"))
         if data.get("delivery_start_date"):
@@ -276,12 +312,5 @@ def generate_xml_v2(data, orderId, buyerId, buyer_data):
         if item.get("product_id"):
             sellers_id = etree.SubElement(item_el, cac("SellersItemIdentification"))
             etree.SubElement(sellers_id, cbc("ID")).text = item["product_id"]
-
-    xml_bytes = etree.tostring(
-        root,
-        pretty_print=True,
-        xml_declaration=True,
-        encoding="UTF-8",
-    )
-
-    return xml_bytes
+ 
+    return etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="UTF-8")
