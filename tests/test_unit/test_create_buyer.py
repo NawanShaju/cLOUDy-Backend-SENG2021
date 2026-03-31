@@ -62,7 +62,7 @@ def test_create_buyer_duplicate_account_id_returns_409(monkeypatch, mock_db, val
 def test_create_buyer_success_returns_buyer_id(monkeypatch, mock_db, valid_buyer_data):
     monkeypatch.setattr("app.services.buyer_service.find_buyer_by_account_id", lambda db, a: None)
     monkeypatch.setattr("app.services.buyer_service.insert_address", lambda db, a: [("addr-id",)])
-    monkeypatch.setattr("app.services.buyer_service.insert_buyer_tax_scheme", lambda db, t: [("tax-id",)])
+    monkeypatch.setattr("app.services.buyer_service.insert_tax_scheme", lambda db, t: [("tax-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_buyer", lambda db, d, a, t: [("new-buyer-id",)])
 
     result = create_buyer_service(mock_db, valid_buyer_data)
@@ -76,7 +76,7 @@ def test_create_buyer_without_address_skips_insert(monkeypatch, mock_db, valid_b
     address_calls = []
     monkeypatch.setattr("app.services.buyer_service.find_buyer_by_account_id", lambda db, a: None)
     monkeypatch.setattr("app.services.buyer_service.insert_address", lambda db, a: address_calls.append(a) or [("addr-id",)])
-    monkeypatch.setattr("app.services.buyer_service.insert_buyer_tax_scheme", lambda db, t: [("tax-id",)])
+    monkeypatch.setattr("app.services.buyer_service.insert_tax_scheme", lambda db, t: [("tax-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_buyer", lambda db, d, a, t: [("buyer-id",)])
 
     create_buyer_service(mock_db, valid_buyer_data)
@@ -88,7 +88,7 @@ def test_create_buyer_without_tax_scheme_skips_insert(monkeypatch, mock_db, vali
     tax_calls = []
     monkeypatch.setattr("app.services.buyer_service.find_buyer_by_account_id", lambda db, a: None)
     monkeypatch.setattr("app.services.buyer_service.insert_address", lambda db, a: [("addr-id",)])
-    monkeypatch.setattr("app.services.buyer_service.insert_buyer_tax_scheme", lambda db, t: tax_calls.append(t) or [("tax-id",)])
+    monkeypatch.setattr("app.services.buyer_service.insert_tax_scheme", lambda db, t: tax_calls.append(t) or [("tax-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_buyer", lambda db, d, a, t: [("buyer-id",)])
 
     create_buyer_service(mock_db, valid_buyer_data)
@@ -100,7 +100,7 @@ def test_create_buyer_passes_correct_params_to_insert(monkeypatch, mock_db, vali
     valid_buyer_data.pop("tax_scheme")
     monkeypatch.setattr("app.services.buyer_service.find_buyer_by_account_id", lambda db, a: None)
     monkeypatch.setattr("app.services.buyer_service.insert_address", lambda db, a: [("addr-id",)])
-    monkeypatch.setattr("app.services.buyer_service.insert_buyer_tax_scheme", lambda db, t: [("tax-id",)])
+    monkeypatch.setattr("app.services.buyer_service.insert_tax_scheme", lambda db, t: [("tax-id",)])
 
     def fake_insert_buyer(db, data, addr_id, tax_id):
         captured["addr_id"] = addr_id
@@ -128,7 +128,7 @@ def test_find_buyer_by_account_id_not_found(mock_db):
     assert result is None
 
 
-def test_insert_buyer_tax_scheme_calls_db(mock_db):
+def test_insert_tax_scheme_calls_db(mock_db):
     mock_db.execute_insert_update_delete.return_value = [("tax-scheme-id",)]
     tax = {
         "registration_name": "IYT Tax", "company_id": "123",
