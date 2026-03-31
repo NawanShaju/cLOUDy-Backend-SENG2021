@@ -1,34 +1,13 @@
-def find_buyer_by_account_id(db, customer_assigned_account_id):
+def find_seller_by_account_id(db, customer_assigned_account_id):
     query = """
-        SELECT buyer_id FROM buyers
+        SELECT seller_id FROM sellers
         WHERE customer_assigned_account_id = %(customer_assigned_account_id)s
     """
     return db.execute_query(query, {"customer_assigned_account_id": customer_assigned_account_id})
 
-def insert_tax_scheme(db, tax_scheme):
+def insert_seller(db, data, address_id, tax_scheme_id):
     query = """
-        INSERT INTO tax_schemes (
-            registration_name,
-            company_id,
-            exemption_reason,
-            scheme_id,
-            tax_type_code
-        )
-        VALUES (
-            %(registration_name)s,
-            %(company_id)s,
-            %(exemption_reason)s,
-            %(scheme_id)s,
-            %(tax_type_code)s
-        )
-        RETURNING tax_scheme_id
-    """
-    return db.execute_insert_update_delete(query, tax_scheme)
-
-
-def insert_buyer(db, data, address_id, tax_scheme_id):
-    query = """
-        INSERT INTO buyers (
+        INSERT INTO sellers (
             customer_assigned_account_id,
             supplier_assigned_account_id,
             party_name,
@@ -50,7 +29,7 @@ def insert_buyer(db, data, address_id, tax_scheme_id):
             %(contact_telefax)s,
             %(contact_email)s
         )
-        RETURNING buyer_id
+        RETURNING seller_id
     """
     contact = data.get("contact", {})
     params = {
@@ -66,18 +45,18 @@ def insert_buyer(db, data, address_id, tax_scheme_id):
     }
     return db.execute_insert_update_delete(query, params)
 
-def get_buyer_by_id(db, buyer_id):
+def get_seller_by_id(db, seller_id):
     query = """
         SELECT
-            b.buyer_id,
-            b.customer_assigned_account_id,
-            b.supplier_assigned_account_id,
-            b.party_name,
-            b.contact_name,
-            b.contact_telephone,
-            b.contact_telefax,
-            b.contact_email,
-            b.tax_scheme_id,
+            s.seller_id,
+            s.customer_assigned_account_id,
+            s.supplier_assigned_account_id,
+            s.party_name,
+            s.contact_name,
+            s.contact_telephone,
+            s.contact_telefax,
+            s.contact_email,
+            s.tax_scheme_id,
             t.registration_name,
             t.company_id,
             t.exemption_reason,
@@ -88,18 +67,18 @@ def get_buyer_by_id(db, buyer_id):
             a.state,
             a.postal_code,
             a.country_code
-        FROM buyers b
-        LEFT JOIN addresses a ON b.address_id = a.address_id
-        LEFT JOIN tax_schemes t ON b.tax_scheme_id = t.tax_scheme_id
-        WHERE b.buyer_id = %(buyer_id)s
+        FROM sellers s
+        LEFT JOIN addresses a ON s.address_id = a.address_id
+        LEFT JOIN tax_schemes t ON s.tax_scheme_id = t.tax_scheme_id
+        WHERE s.seller_id = %(seller_id)s
     """
-    result = db.execute_query(query, {"buyer_id": buyer_id})
+    result = db.execute_query(query, {"seller_id": seller_id})
     if not result:
         return None
 
     row = result
     return {
-        "buyer_id":                      str(row[0]),
+        "seller_id":                     str(row[0]),
         "customer_assigned_account_id":  row[1],
         "supplier_assigned_account_id":  row[2],
         "party_name":                    row[3],
@@ -124,4 +103,3 @@ def get_buyer_by_id(db, buyer_id):
             "country_code": row[18],
         } if row[14] else None,
     }
-    

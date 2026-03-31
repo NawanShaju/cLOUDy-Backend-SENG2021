@@ -188,3 +188,4 @@ CREATE INDEX idx_orders_buyer_id ON orders(buyer_id);
 CREATE INDEX idx_sellers_seller_id ON sellers(seller_id);
 CREATE INDEX idx_sellers_address_id ON sellers(address_id);
 CREATE INDEX idx_sellers_tax_scheme_id ON sellers(tax_scheme_id);
+CREATE INDEX idx_orders_seller_id ON orders(seller_id);

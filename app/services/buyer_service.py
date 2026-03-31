@@ -1,5 +1,5 @@
 from .db_services.buyer_db import (
-    insert_buyer_tax_scheme,
+    insert_tax_scheme,
     insert_buyer,
     find_buyer_by_account_id,
 )
@@ -24,7 +24,7 @@ def create_buyer_service(db, data):
 
     tax_scheme_id = None
     if data.get("tax_scheme"):
-        result = insert_buyer_tax_scheme(db, data["tax_scheme"])
+        result = insert_tax_scheme(db, data["tax_scheme"])
         tax_scheme_id = result[0][0]
 
     buyer = insert_buyer(db, data, address_id, tax_scheme_id)
