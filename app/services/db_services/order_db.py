@@ -15,7 +15,10 @@ def get_order_details(db, buyerId, orderId):
         LEFT JOIN products p
             ON oi.product_id = p.product_id
         WHERE o.order_id = %(order_id)s
-          AND o.external_buyer_id = %(buyer_id)s
+            AND (
+                o.external_buyer_id = %(buyer_id)s
+                OR o.buyer_id::text = %(buyer_id)s
+            )
     """
     params = {"order_id": orderId, "buyer_id": buyerId}
     return db.execute_query(query, params, fetch_all=True)
@@ -198,7 +201,10 @@ def update_order(db, data, buyerId, orderId):
             address_id      = COALESCE(%(address_id)s, address_id),
             status          = COALESCE(%(status)s, status)
         WHERE order_id = %(orderId)s
-        AND external_buyer_id = %(buyerId)s
+            AND (
+                external_buyer_id = %(buyer_id)s
+                OR buyer_id::text = %(buyer_id)s
+            )
         RETURNING *
     """
     params = {
@@ -290,7 +296,10 @@ def get_full_order(db, buyer_id, order_id):
         LEFT JOIN order_items oi ON o.order_id = oi.order_id
         LEFT JOIN products p ON oi.product_id = p.product_id
         WHERE o.order_id = %(order_id)s
-        AND o.external_buyer_id = %(buyer_id)s
+            AND (
+                o.external_buyer_id = %(buyer_id)s
+                OR o.buyer_id::text = %(buyer_id)s
+            )
         GROUP BY o.order_date, o.delivery_date, o.currency_code,
                  o.status, a.street, a.city, a.state, a.postal_code, a.country_code
     """
@@ -326,7 +335,10 @@ def get_orders_for_buyer(db, buyerId, status=None, from_date=None, to_date=None,
         FROM orders o
         LEFT JOIN order_items oi
             ON o.order_id = oi.order_id
-        WHERE o.external_buyer_id = %(buyer_id)s
+        WHERE (
+            o.external_buyer_id = %(buyer_id)s
+            OR o.buyer_id::text = %(buyer_id)s
+        )
     """
     params = {"buyer_id": buyerId, "limit": limit, "offset": offset}
 
@@ -352,7 +364,10 @@ def get_orders_for_buyer(db, buyerId, status=None, from_date=None, to_date=None,
 def buyer_has_orders(db, buyer_id):
     query = """
         SELECT 1 FROM orders
-        WHERE external_buyer_id = %(buyer_id)s
+        WHERE (
+            external_buyer_id = %(buyer_id)s
+            OR buyer_id::text = %(buyer_id)s
+        )
         LIMIT 1
     """
     return db.execute_query(query, {"buyer_id": buyer_id})
@@ -360,7 +375,10 @@ def buyer_has_orders(db, buyer_id):
 def get_cancelled_orders_for_buyer(db, buyer_id):
     query = """
         SELECT order_id FROM orders
-        WHERE external_buyer_id = %(buyer_id)s
+        WHERE (
+            external_buyer_id = %(buyer_id)s
+            OR buyer_id::text = %(buyer_id)s
+        )
         AND status = 'CANCELED'
     """
     return db.execute_query(query, {"buyer_id": buyer_id}, fetch_all=True)
