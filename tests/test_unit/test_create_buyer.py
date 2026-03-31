@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, call
 from app.services.buyer_service import create_buyer_service
 from app.services.db_services.buyer_db import (
     find_buyer_by_account_id,
-    insert_buyer_tax_scheme,
+    insert_tax_scheme,
     insert_buyer,
     get_buyer_by_id,
 )
@@ -135,7 +135,7 @@ def test_insert_buyer_tax_scheme_calls_db(mock_db):
         "exemption_reason": "Local Authority",
         "scheme_id": "VAT", "tax_type_code": "VAT"
     }
-    result = insert_buyer_tax_scheme(mock_db, tax)
+    result = insert_tax_scheme(mock_db, tax)
     mock_db.execute_insert_update_delete.assert_called_once()
     assert result == [("tax-scheme-id",)]
 
