@@ -1,6 +1,7 @@
 from database.PostgresDB import PostgresDB
 from functools import wraps
 from flask import request, jsonify
+from app.services.db_services.buyer_db import validate_buyer_ownership
 import secrets
 import bcrypt
 
@@ -75,17 +76,33 @@ def validate_api_key(f):
 
         api_key = request.headers.get("api-key")
 
-        query = """
-            SELECT api_key
-            FROM clients
-            where api_key = %s
-        """
-        
         with PostgresDB() as db:
-            key_is_valid = db.execute_query(query, (api_key, ))
+            key_is_valid = db.execute_query(
+                "SELECT api_key FROM clients WHERE api_key = %s",
+                (api_key,)
+            )
 
-        if not key_is_valid:
-            return jsonify({"error": "Unauthorized"}), 401
+            if not key_is_valid:
+                return jsonify({"error": "Unauthorized"}), 401
+            
+            buyer_id = kwargs.get("buyerId")
+            if buyer_id:
+                with PostgresDB() as db:
+                    owned = validate_buyer_ownership(db, api_key, buyer_id)
+                if not owned:
+                    return jsonify({"error": "You do not own this buyer"}), 403
+
+        # query = """
+        #     SELECT api_key
+        #     FROM clients
+        #     where api_key = %s
+        # """
+        
+        # with PostgresDB() as db:
+        #     key_is_valid = db.execute_query(query, (api_key, ))
+
+        # if not key_is_valid:
+        #     return jsonify({"error": "Unauthorized"}), 401
 
         return f(*args, **kwargs)
 

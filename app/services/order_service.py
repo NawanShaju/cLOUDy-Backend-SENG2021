@@ -1,6 +1,7 @@
 from flask import jsonify
 from app.services.db_services.buyer_db import get_buyer_by_id
 from app.services.db_services.seller_db import get_seller_by_id
+from app.services.db_services.buyer_db import insert_auth
 from .db_services.xml_db import get_order_xml
 from .db_services.order_db import (
     get_full_order,
@@ -95,7 +96,7 @@ def get_orders_for_buyer_service(db, buyerId, status=None, from_date=None, to_da
         for row in rows
     ]
 
-def create_order_service(db, data, buyerId):
+def create_order_service(db, data, buyerId, api_key):
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
 
@@ -103,6 +104,8 @@ def create_order_service(db, data, buyerId):
     product_map = insert_product(db, data.get("items"))
     order_id = insert_order(db, data, buyerId, address_id[0][0])
     insert_order_item(db, data.get("items"), order_id[0][0], product_map)
+
+    insert_auth(db, api_key, buyerId)
 
     return order_id
 

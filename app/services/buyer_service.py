@@ -2,11 +2,12 @@ from .db_services.buyer_db import (
     insert_tax_scheme,
     insert_buyer,
     find_buyer_by_account_id,
+    insert_auth,
 )
 
 from .db_services.order_db import insert_address
 
-def create_buyer_service(db, data):
+def create_buyer_service(db, data, api_key):
     if not data.get("party_name"):
         return {"error": "party_name is required"}, 400
 
@@ -28,4 +29,8 @@ def create_buyer_service(db, data):
         tax_scheme_id = result[0][0]
 
     buyer = insert_buyer(db, data, address_id, tax_scheme_id)
-    return {"buyer_id": str(buyer[0][0])}
+    buyer_id = str(buyer[0][0])
+
+    insert_auth(db, api_key, buyer_id)
+
+    return {"buyer_id": buyer_id}

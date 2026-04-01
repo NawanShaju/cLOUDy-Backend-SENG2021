@@ -63,8 +63,10 @@ def create_order(buyerId):
     if validate_error:
         return jsonify({"error": validate_error}), 400
     
+    api_key = request.headers.get("api-key")
+
     with PostgresDB() as db:
-        order_id = create_order_service(db, data, buyerId)
+        order_id = create_order_service(db, data, buyerId, api_key)
         xml_string = generate_xml(data, order_id[0][0], buyerId)
         xml_to_db(db, xml_string, order_id[0][0])
     
@@ -108,9 +110,11 @@ def create_buyer():
 
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
+    
+    api_key = request.header.get("api-key")
 
     with PostgresDB() as db:
-        result = create_buyer_service(db, data)
+        result = create_buyer_service(db, data, api_key)
 
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
