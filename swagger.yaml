@@ -7,13 +7,11 @@ info:
     This is the UBL ordering API.
 
     ### CORS
+    CORS is enabled for cross-origin requests. This API uses API key authentication,
+    so clients should not send credentials (e.g. cookies or withCredentials);
+    include the api-key header only. Do not set withCredentials/Credentials to true.
 
-    CORS is enabled for cross-origin requests. This API uses API key authentication, 
-    so clients should not send credentials (e.g. cookies or `withCredentials`); include the `api-key` header only. 
-    Do not set withCredentials/Credentials to true
-
-
-    🔐 Authentication  
+    🔐 **Authentication**
     All endpoints except `/get-key`, `/health`, and `/v1/validate-xml` require an API key.
 
     To obtain an API key:
@@ -21,29 +19,48 @@ info:
     2. Copy the returned key
     3. Send it in requests:
 
-    api-key: YOUR_API_KEY
+    `api-key: YOUR_API_KEY`
 
 servers:
   - url: http://cLOUDy-373805882.us-east-1.elb.amazonaws.com/api
+    description: Production Server
+  - url: http://0.0.0.0:5001/api
+    description: Local Server
 
 security:
   - ApiKeyAuth: []
 
 tags:
+  - name: System
+    description: System health and monitoring
   - name: Auth
     description: Operations for authentication
   - name: Buyers
     description: Operations about buyers
+  - name: Sellers
+    description: Operations about sellers
   - name: Orders
-    description: Operations about the orders
+    description: |
+      Standard order operations (V1).
+
+      **Note:** V1 order endpoints do not support registered buyer IDs or seller IDs.
+      Buyer and seller details are taken directly from the request body fields
+      (e.g. `address`, `supplier`). To create orders enriched with full registered
+      buyer and seller details, use the **Orders V2** endpoints.
   - name: Orders V2
     description: |
-      Enhanced order operations. Requires the buyerId to be a registered buyer in the system.
-      The generated UBL XML will be enriched with full buyer and seller details.
+      Enhanced order operations (V2).
+
+      Requires the `buyerId` path parameter to be a UUID of a buyer registered
+      via **POST /v1/buyer**. The generated UBL XML is automatically enriched
+      with full buyer details (party name, postal address, tax scheme, contact).
+
+      Optionally, a `seller_id` field can be included in the request body to link
+      a registered seller (created via **POST /v1/seller**). When provided, the
+      seller's full details are embedded in the UBL XML `SellerSupplierParty` block.
+      When omitted, the `supplier` field in the request body is used as a plain name fallback.
   - name: Validation
     description: Operations for XML validation
-  - name: System
-    description: System health and monitoring
 
 paths:
 
@@ -65,7 +82,6 @@ paths:
                   status:
                     type: string
                     example: "running"
-
         "500":
           description: Service is unhealthy
           content:
@@ -86,7 +102,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateApiKeyRequest'
-
       responses:
         "200":
           description: API key generated
@@ -94,14 +109,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiKeyResponse'
-
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
-
         "401":
           description: Authentication failed
           content:
@@ -114,14 +127,38 @@ paths:
       tags:
         - Buyers
       summary: Create buyer
-      description: Creates a new buyer with optional address, tax scheme, and contact details.
+      description: |
+        Creates a new buyer with optional address, tax scheme, and contact details.
+
+        The buyer_id returned can be passed as buyer_id in the **POST /v2/buyer/{buyerId}/order**
+        to embed full buyer details in the generated UBL XML.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateBuyerRequest'
-
+            example:
+              party_name: "IYT Corporation"
+              customer_assigned_account_id: "XFB01"
+              supplier_assigned_account_id: "GT00978567"
+              address:
+                street: "56A Avon Way"
+                city: "Bridgtow"
+                state: "Avon"
+                postal_code: "ZZ99 1ZZ"
+                country_code: "GB"
+              contact:
+                name: "Mr Fred Churchill"
+                telephone: "0127 2653214"
+                telefax: "0127 2653215"
+                email: "fred@iytcorporation.gov.uk"
+              tax_scheme:
+                registration_name: "Bridgtow District Council"
+                company_id: "12356478"
+                exemption_reason: "Local Authority"
+                scheme_id: "UK VAT"
+                tax_type_code: "VAT"
       responses:
         "201":
           description: Buyer created successfully
@@ -129,21 +166,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateBuyerResponse'
-
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
-
         "401":
           description: Invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
 
+  /v1/seller:
+    post:
+      tags:
+        - Sellers
+      summary: Create seller
+      description: |
+        Creates a new seller with optional address, tax scheme, and contact details.
+
+        The seller_id returned can be passed as seller_id in the **POST /v2/buyer/{buyerId}/order**
+        request body to embed full seller details in the generated UBL XML.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSellerRequest'
+            example:
+              party_name: "Consortial Supplies"
+              customer_assigned_account_id: "CO001"
+              supplier_assigned_account_id: "SUP-98765"
+              address:
+                street: "56 Busy Street"
+                city: "Farthing"
+                state: "Heremouthshire"
+                postal_code: "AA99 1BB"
+                country_code: "AU"
+              contact:
+                name: "Mrs Bouquet"
+                telephone: "0158 1233714"
+                telefax: "0158 1233856"
+                email: "bouquet@consortial.com"
+              tax_scheme:
+                registration_name: "Farthing Purchasing Consortium"
+                company_id: "175 269 2355"
+                exemption_reason: "N/A"
+                scheme_id: "VAT"
+                tax_type_code: "VAT"
+      responses:
+        "201":
+          description: Seller created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSellerResponse'
+        "400":
+          description: Invalid request — missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
         "500":
           description: Server error
           content:
@@ -155,22 +252,44 @@ paths:
     post:
       tags:
         - Orders
-      summary: Create order
-      description: Creates an order for a buyer and returns the generated UBL XML.
+      summary: Create order (V1)
+      description: |
+        Creates an order for a buyer and returns the generated UBL XML.
+
+        **Note:** This V1 endpoint does not support registered buyer IDs or seller IDs.
+        The `buyerId` path parameter is stored as an external reference only and is not
+        validated against the buyers table. Buyer details in the XML are sourced from
+        the `address` field in the request body. To include a named seller, provide a
+        `supplier` string field — this will be used as the seller party name in the XML.
+        For fully enriched buyer and seller XML, use **POST /v2/buyer/{buyerId}/order**.
       parameters:
         - name: buyerId
           in: path
           required: true
           schema:
             type: string
-
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/OrderRequest'
-
+            example:
+              order_date: "2026-02-27"
+              delivery_date: "2026-03-10"
+              currency_code: "AUD"
+              supplier: "Acme Supplies"
+              address:
+                street: "436 George St"
+                city: "Sydney"
+                state: "NSW"
+                postal_code: "2000"
+                country_code: "AU"
+              items:
+                - item_name: "Widget"
+                  item_description: "Industrial widget"
+                  quantity: 15
+                  unit_price: 50.00
       responses:
         "200":
           description: Order created successfully
@@ -179,21 +298,18 @@ paths:
               schema:
                 type: string
                 example: "<Order>...</Order>"
-
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
-
         "401":
           description: Invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidApiKeyError'
-
         "500":
           description: Server error
           content:
@@ -205,21 +321,22 @@ paths:
       tags:
         - Orders
       summary: List orders for a buyer
-      description: Retrieve a paginated list of orders for a buyer.
+      description: |
+        Retrieve a paginated list of orders for a buyer.
+
+        **Note:** This endpoint uses the external `buyerId` reference, not a registered buyer UUID.
       parameters:
         - name: buyerId
           in: path
           required: true
           schema:
             type: string
-
         - name: status
           in: query
           required: false
           schema:
             type: string
             example: CREATED
-
         - name: fromDate
           in: query
           required: false
@@ -227,7 +344,6 @@ paths:
             type: string
             format: date
             example: "2026-03-01"
-
         - name: toDate
           in: query
           required: false
@@ -235,21 +351,18 @@ paths:
             type: string
             format: date
             example: "2026-03-10"
-
         - name: limit
           in: query
           required: false
           schema:
             type: integer
             default: 10
-
         - name: offset
           in: query
           required: false
           schema:
             type: integer
             default: 0
-
       responses:
         "200":
           description: Orders retrieved successfully
@@ -257,28 +370,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrdersListResponse'
-
         "400":
           description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
-
         "401":
           description: Invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidApiKeyError'
-
         "404":
           description: Buyer not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
-
         "500":
           description: Server error
           content:
@@ -298,14 +407,12 @@ paths:
           required: true
           schema:
             type: string
-
         - name: orderId
           in: path
           required: true
           schema:
             type: string
             format: uuid
-
       responses:
         "200":
           description: Order retrieved successfully
@@ -313,21 +420,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrderResponse'
-
+        "400":
+          description: Invalid orderId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
         "401":
           description: Invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidApiKeyError'
-
         "404":
           description: Order not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
-
         "500":
           description: Server error
           content:
@@ -339,28 +449,46 @@ paths:
       tags:
         - Orders
       summary: Update order
-      description: Update an existing order for a buyer and return the updated UBL XML document.
+      description: |
+        Update an existing order for a buyer and return the updated UBL XML document.
+
+        **Note:** This V1 endpoint does not support seller IDs. Seller information in
+        the XML is not updated by this endpoint.
       parameters:
         - name: buyerId
           in: path
           required: true
           schema:
             type: string
-
         - name: orderId
           in: path
           required: true
           schema:
             type: string
             format: uuid
-
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/OrderUpdateRequest'
-
+            example:
+              seller_id: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+              order_date: "2026-02-27"
+              delivery_date: "2026-03-10"
+              currency_code: "AUD"
+              address:
+                street: "436 George St"
+                city: "Sydney"
+                state: "NSW"
+                postal_code: "2000"
+                country_code: "AU"
+              item:
+                product_id: "2acd6acf-1d3d-405b-8177-eb110e46f712"
+                item_name: "Widget"
+                item_description: "Industrial widget"
+                quantity: 15
+                unit_price: 50
       responses:
         "200":
           description: Order updated successfully
@@ -369,28 +497,24 @@ paths:
               schema:
                 type: string
                 example: "<Order>...</Order>"
-
         "400":
           description: Invalid request or validation failure
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
-
         "401":
           description: Invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidApiKeyError'
-
         "404":
           description: Order not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
-
         "500":
           description: Server error
           content:
@@ -409,14 +533,12 @@ paths:
           required: true
           schema:
             type: string
-
         - name: orderId
           in: path
           required: true
           schema:
             type: string
             format: uuid
-
       responses:
         "200":
           description: Order deleted successfully
@@ -424,35 +546,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteOrderResponse'
-
         "401":
           description: Invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidApiKeyError'
-
         "403":
           description: Buyer does not have access to this order
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
-
         "404":
           description: Order not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
-
         "409":
           description: Order cannot be deleted unless status is CANCELED
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictError'
-
         "500":
           description: Server error
           content:
@@ -472,14 +589,12 @@ paths:
           required: true
           schema:
             type: string
-
         - name: orderId
           in: path
           required: true
           schema:
             type: string
             format: uuid
-
       responses:
         "200":
           description: Order canceled successfully
@@ -487,35 +602,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CancelOrderResponse'
-
         "401":
           description: Invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidApiKeyError'
-
         "403":
           description: Buyer does not have access to this order
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ForbiddenError'
-
         "404":
           description: Order not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
-
         "409":
           description: Order cannot be cancelled due to current status
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CancelConflictError'
-
         "500":
           description: Server error
           content:
@@ -535,7 +645,6 @@ paths:
           required: true
           schema:
             type: string
-
       responses:
         "200":
           description: All cancelled orders deleted successfully
@@ -543,21 +652,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteAllCancelledOrdersResponse'
-
         "401":
           description: Invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidApiKeyError'
-
         "404":
           description: Buyer not found or buyerId invalid
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotFoundError'
-
         "500":
           description: Server error
           content:
@@ -573,72 +679,71 @@ paths:
       description: |
         Creates an order for a registered buyer and returns enriched UBL XML.
 
-        Unlike V1, the buyerId must correspond to a buyer registered via **POST /v1/buyer**.
-        The generated XML will be automatically populated with the buyer's full details
-        including party name, postal address, tax scheme, and contact information.
-        The order is linked to the buyer record via buyer_id rather than external_buyer_id.
+        Unlike V1, the `buyerId` must correspond to a buyer registered via **POST /v1/buyer**.
+        The generated XML is automatically populated with the buyer's full details including
+        party name, postal address, tax scheme, and contact information.
+
+        **Seller support:** An optional `seller_id` field can be included in the request body.
+        When provided, it must be a valid UUID of a seller registered via **POST /v1/seller**.
+        The seller's full details (party name, account IDs, address, tax scheme, contact) will
+        be embedded in the `SellerSupplierParty` block of the generated UBL XML. When `seller_id`
+        is omitted, the `supplier` string field is used as a plain seller name fallback.
       parameters:
         - name: buyerId
           in: path
           required: true
-          description: Must be a valid UUID of a registered buyer
+          description: UUID of a registered buyer (created via POST /v1/buyer)
           schema:
             type: string
             format: uuid
-
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OrderRequest'
+              $ref: '#/components/schemas/OrderRequestV2'
             example:
-              order_date: "2026-03-29"
-              delivery_date: "2026-04-10"
+              order_date: "2024-01-15"
+              delivery_date: "2024-01-20"
               currency_code: "AUD"
+              seller_id: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
               address:
-                street: "436 George St"
+                street: "123 Main St"
                 city: "Sydney"
                 state: "NSW"
                 postal_code: "2000"
                 country_code: "AU"
               items:
-                - item_name: "Widget"
-                  item_description: "Industrial widget"
-                  quantity: 15
-                  unit_price: 50.00
-                  unit_code: "EA"
-
+                - item_name: "Widget A"
+                  item_description: "A great widget"
+                  unit_price: 10.00
+                  quantity: 2
       responses:
         "200":
-          description: Order created successfully, returns enriched UBL XML
+          description: Order created successfully — returns enriched UBL XML
           content:
             application/xml:
               schema:
                 type: string
                 example: "<Order>...</Order>"
-
         "400":
-          description: Invalid request
+          description: Invalid request — bad UUID, missing fields, or invalid seller_id
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
-
         "401":
           description: Invalid or missing API key
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvalidApiKeyError'
-
         "404":
-          description: Buyer not found
+          description: Buyer not found or seller not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotFoundError'
-
+                $ref: '#/components/schemas/BuyerNotFoundError'
         "500":
           description: Server error
           content:
@@ -652,7 +757,7 @@ paths:
         - Validation
       security: []
       summary: Validate XML
-      description: Validate an order XML document.
+      description: Validate an order XML document against UBL 2.1 schema rules.
       requestBody:
         required: true
         content:
@@ -660,22 +765,19 @@ paths:
             schema:
               type: string
               example: "<Order>...</Order>"
-
       responses:
         "200":
-          description: XML validation result
+          description: XML is valid
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/XmlValidationResponse'
-
         "400":
           description: XML validation failed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/XmlValidationError'
-
         "500":
           description: Server error during validation
           content:
@@ -691,6 +793,7 @@ components:
       name: api-key
 
   schemas:
+
     CreateApiKeyRequest:
       type: object
       required:
@@ -711,38 +814,24 @@ components:
           type: string
           example: "ubl_sk_b7c4c5e8a9d34f6c9b8e21d7a4f12345"
 
-    CreateBuyerRequest:
-      type: object
-      required:
-        - customer_assigned_account_id
-        - party_name
-      properties:
-        customer_assigned_account_id:
-          type: string
-          example: "XFB01"
-        supplier_assigned_account_id:
-          type: string
-          example: "GT00978567"
-        party_name:
-          type: string
-          example: "IYT Corporation"
-        address:
-          $ref: '#/components/schemas/Address'
-        tax_scheme:
-          $ref: '#/components/schemas/TaxScheme'
-        contact:
-          $ref: '#/components/schemas/Contact'
-
-    CreateBuyerResponse:
+    Address:
       type: object
       properties:
-        buyerId:
+        street:
           type: string
-          format: uuid
-          example: "3f7a2c1e-4b5d-4e6f-9a8b-1c2d3e4f5a6b"
-        message:
+          example: "436 George St"
+        city:
           type: string
-          example: "Buyer created successfully"
+          example: "Sydney"
+        state:
+          type: string
+          example: "NSW"
+        postal_code:
+          type: string
+          example: "2000"
+        country_code:
+          type: string
+          example: "AU"
 
     TaxScheme:
       type: object
@@ -779,6 +868,92 @@ components:
           type: string
           example: "fred@iytcorporation.gov.uk"
 
+    OrderItem:
+      type: object
+      properties:
+        item_name:
+          type: string
+          example: "Widget"
+        item_description:
+          type: string
+          example: "Industrial widget"
+        quantity:
+          type: integer
+          example: 15
+        unit_price:
+          type: number
+          example: 50.00
+        unit_code:
+          type: string
+          example: "EA"
+          description: Unit of measure code (defaults to EA if omitted)
+
+    CreateBuyerRequest:
+      type: object
+      required:
+        - customer_assigned_account_id
+        - party_name
+      properties:
+        customer_assigned_account_id:
+          type: string
+          example: "XFB01"
+        supplier_assigned_account_id:
+          type: string
+          example: "GT00978567"
+        party_name:
+          type: string
+          example: "IYT Corporation"
+        address:
+          $ref: '#/components/schemas/Address'
+        tax_scheme:
+          $ref: '#/components/schemas/TaxScheme'
+        contact:
+          $ref: '#/components/schemas/Contact'
+
+    CreateBuyerResponse:
+      type: object
+      properties:
+        buyerId:
+          type: string
+          format: uuid
+          example: "3f7a2c1e-4b5d-4e6f-9a8b-1c2d3e4f5a6b"
+        message:
+          type: string
+          example: "Buyer created successfully"
+
+    CreateSellerRequest:
+      type: object
+      required:
+        - customer_assigned_account_id
+        - party_name
+      properties:
+        customer_assigned_account_id:
+          type: string
+          example: "CO001"
+        supplier_assigned_account_id:
+          type: string
+          example: "SUP-98765"
+        party_name:
+          type: string
+          example: "Consortial Supplies"
+        address:
+          $ref: '#/components/schemas/Address'
+        tax_scheme:
+          $ref: '#/components/schemas/TaxScheme'
+        contact:
+          $ref: '#/components/schemas/Contact'
+
+    CreateSellerResponse:
+      type: object
+      properties:
+        sellerId:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        message:
+          type: string
+          example: "Seller created successfully"
+
     OrderRequest:
       type: object
       required:
@@ -799,6 +974,63 @@ components:
         currency_code:
           type: string
           example: "AUD"
+        supplier:
+          type: string
+          example: "Acme Supplies"
+          description: Plain seller name used in the UBL XML (V1 only — no seller registration needed)
+        address:
+          $ref: '#/components/schemas/Address'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    OrderRequestV2:
+      type: object
+      required:
+        - order_date
+        - delivery_date
+        - currency_code
+        - address
+        - items
+      properties:
+        order_date:
+          type: string
+          format: date
+          example: "2026-02-27"
+        delivery_date:
+          type: string
+          format: date
+          example: "2026-03-10"
+        currency_code:
+          type: string
+          example: "AUD"
+        seller_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+          description: |
+            Optional UUID of a registered seller (created via POST /v1/seller).
+            When provided, the seller's full details are embedded in the UBL XML.
+            When omitted, the `supplier` string is used as a plain name fallback.
+        supplier:
+          type: string
+          example: "Acme Supplies"
+          description: Plain seller name fallback — used only when seller_id is not provided
+        delivery_start_date:
+          type: string
+          format: date
+          example: "2024-01-18"
+          description: Optional start date for the requested delivery period
+        delivery_start_time:
+          type: string
+          example: "09:00:00"
+          description: Optional start time for the requested delivery period
+        delivery_end_time:
+          type: string
+          example: "17:00:00"
+          description: Optional end time for the requested delivery period
         address:
           $ref: '#/components/schemas/Address'
         items:
@@ -809,6 +1041,9 @@ components:
     OrderUpdateRequest:
       type: object
       properties:
+        seller_id:
+          type: string
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
         order_date:
           type: string
           format: date
@@ -824,57 +1059,6 @@ components:
           $ref: '#/components/schemas/Address'
         item:
           $ref: '#/components/schemas/OrderItem'
-      example:
-        order_date: "2026-02-27"
-        delivery_date: "2026-03-10"
-        currency_code: "AUD"
-        address:
-          street: "436 George St"
-          city: "Sydney"
-          state: "NSW"
-          postal_code: "2000"
-          country_code: "AU"
-        item:
-          product_id: "2acd6acf-1d3d-405b-8177-eb110e46f712"
-          item_name: "Widget"
-          item_description: "Industrial widget"
-          quantity: 15
-          unit_price: 50
-
-    Address:
-      type: object
-      properties:
-        street:
-          type: string
-          example: "436 George St"
-        city:
-          type: string
-          example: "Sydney"
-        state:
-          type: string
-          example: "NSW"
-        postal_code:
-          type: string
-          example: "2000"
-        country_code:
-          type: string
-          example: "AU"
-
-    OrderItem:
-      type: object
-      properties:
-        item_name:
-          type: string
-          example: "Widget"
-        item_description:
-          type: string
-          example: "Industrial widget"
-        quantity:
-          type: integer
-          example: 15
-        unit_price:
-          type: number
-          example: 50
 
     OrderResponse:
       type: object
@@ -883,19 +1067,34 @@ components:
           type: string
           format: uuid
           example: "1273819c-ad12-4f6a-b8e2-11d7a4f12345"
-        productId:
-          type: string
-          nullable: true
-          example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
-        quantity:
-          type: integer
-          example: 10
-        money:
-          type: number
-          example: 500
         status:
           type: string
           example: "CREATED"
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                nullable: true
+                example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+              productName:
+                type: string
+                example: "Widget"
+              productDescription:
+                type: string
+                nullable: true
+                example: "Industrial widget"
+              unitPrice:
+                type: string
+                example: "50.0"
+              quantity:
+                type: integer
+                example: 10
+              totalPrice:
+                type: string
+                example: "500.0"
         xml:
           type: string
           example: "<Order>...</Order>"
@@ -1005,6 +1204,16 @@ components:
           type: string
           example: "Order not found"
 
+    BuyerNotFoundError:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 404
+        error:
+          type: string
+          example: "Buyer not found"
+
     ServerError:
       type: object
       properties:
@@ -1082,5 +1291,5 @@ components:
           items:
             type: string
           example:
-            - "Missing required element: orderId"
-            - "Invalid currency code"
+            - "Missing required element: <cbc:ID>"
+            - "Order must contain at least one <cac:OrderLine>"
