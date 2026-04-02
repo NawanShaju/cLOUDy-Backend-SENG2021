@@ -111,7 +111,7 @@ def create_buyer():
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
     
-    api_key = request.header.get("api-key")
+    api_key = request.headers.get("api-key")
 
     with PostgresDB() as db:
         result = create_buyer_service(db, data, api_key)
