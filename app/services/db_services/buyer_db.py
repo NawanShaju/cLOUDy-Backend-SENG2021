@@ -124,3 +124,26 @@ def get_buyer_by_id(db, buyer_id):
         } if result[14] else None,
     }
     
+def insert_auth(db, api_key, buyer_id):
+    query = """
+        INSERT INTO auth (api_key, buyer_id)
+        VALUES (%(api_key)s, %(buyer_id)s)
+        ON CONFLICT (api_key, buyer_id) DO NOTHING
+    """
+
+    db.execute_insert_update_delete(query, {
+        "api_key": api_key,
+        "buyer_id": str(buyer_id)
+    })
+
+def validate_buyer_ownership(db, api_key, buyer_id):
+    query = """
+        SELECT 1 FROM auth
+        WHERE api_key = %(api_key)s
+        AND buyer_id = %(buyer_id)s
+    """
+
+    return db.execute_query(query, {
+        "api_key": api_key,
+        "buyer_id": str(buyer_id)
+    })

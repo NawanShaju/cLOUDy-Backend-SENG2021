@@ -173,6 +173,17 @@ CREATE TABLE tax_schemes (
 );
 
 -- =========================================
+-- AUTH TABLE
+-- =========================================
+CREATE TABLE auth (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    api_key                 VARCHAR(255) NOT NULL,
+    buyer_id                VARCHAR(255) NOT NULL,
+    created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_auth UNIQUE (api_key, buyer_id)
+);
+
+-- =========================================
 -- INDEXES
 -- =========================================
 CREATE INDEX idx_orders_external_buyer_id ON orders(external_buyer_id);
@@ -189,3 +200,5 @@ CREATE INDEX idx_sellers_seller_id ON sellers(seller_id);
 CREATE INDEX idx_sellers_address_id ON sellers(address_id);
 CREATE INDEX idx_sellers_tax_scheme_id ON sellers(tax_scheme_id);
 CREATE INDEX idx_orders_seller_id ON orders(seller_id);
+CREATE INDEX idx_auth_api_key ON auth(api_key);
+CREATE INDEX idx_auth_buyer_id ON auth(buyer_id);

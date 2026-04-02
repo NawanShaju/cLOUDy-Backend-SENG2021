@@ -27,23 +27,24 @@ def mock_db():
 
 def test_create_order_no_data_returns_400(app, mock_db):
     with app.app_context():
-        response, status_code = create_order_service(mock_db, None, "buyer-001")
+        response, status_code = create_order_service(mock_db, None, "buyer-001", "test-api-key")
         assert status_code == 400
 
 
 def test_create_order_no_data_returns_error_message(app, mock_db):
     with app.app_context():
-        response, _ = create_order_service(mock_db, None, "buyer-001")
+        response, _ = create_order_service(mock_db, None, "buyer-001", "test-api-key")
         assert "error" in response.get_json()
 
 
 def test_create_order_no_data_does_not_touch_db(app, mock_db):
     with app.app_context():
-        create_order_service(mock_db, None, "buyer-001")
+        create_order_service(mock_db, None, "buyer-001", "test-api-key")
         mock_db.execute_insert_update_delete.assert_not_called()
 
 
-def test_create_order_returns_order_id(mock_db):
+def test_create_order_returns_order_id(monkeypatch, mock_db):
+    monkeypatch.setattr("app.services.order_service.insert_auth", lambda db, k, b: None)
     mock_db.execute_insert_update_delete.side_effect = [
         [(1,)],
         [(101,)],
@@ -57,7 +58,7 @@ def test_create_order_returns_order_id(mock_db):
         "address": {"street": "123 Main St", "city": "Sydney", "state": "NSW", "postal_code": "2000", "country_code": "AU"},
         "items": [{"item_name": "Widget A", "item_description": "A widget", "unit_price": 10.00, "quantity": 2}]
     }
-    result = create_order_service(mock_db, data, "buyer-001")
+    result = create_order_service(mock_db, data, "buyer-001", "test-api-key")
     assert result == [(999,)]
 
 

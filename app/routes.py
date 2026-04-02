@@ -4,8 +4,8 @@ from app.services.seller_service import create_seller_service
 from app.services.db_services.seller_db import get_seller_by_id
 from app.services.db_services.buyer_db import get_buyer_by_id
 from .services.validate_order import validate_order, validate_order_xml
+from .services.api_key import validate_api_key, validate_buyer_auth
 from .utils.xml_generation import generate_xml, generate_xml_v2
-from .services.api_key import validate_api_key
 from .services.order_service import (
     get_full_order_service,
     create_order_service,
@@ -65,8 +65,10 @@ def create_order(buyerId):
     if validate_error:
         return jsonify({"error": validate_error}), 400
     
+    api_key = request.headers.get("api-key")
+
     with PostgresDB() as db:
-        order_id = create_order_service(db, data, buyerId)
+        order_id = create_order_service(db, data, buyerId, api_key)
         xml_string = generate_xml(data, order_id[0][0], buyerId)
         xml_to_db(db, xml_string, order_id[0][0])
     
@@ -110,9 +112,11 @@ def create_buyer():
 
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
+    
+    api_key = request.headers.get("api-key")
 
     with PostgresDB() as db:
-        result = create_buyer_service(db, data)
+        result = create_buyer_service(db, data, api_key)
 
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
@@ -142,6 +146,7 @@ def create_seller():
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["PUT"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("100 per hour")
 def update_order(buyerId, orderId):
     data = request.get_json()
@@ -204,6 +209,7 @@ def update_order(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods = ["GET"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("60 per minute")
 def get_order_by_id(buyerId, orderId):
     if not is_valid_uuid(orderId):
@@ -229,6 +235,7 @@ def get_order_by_id(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>/CANCELED", methods=["DELETE"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("20 per minute")
 def cancel_order(buyerId, orderId):
     if not is_valid_uuid(orderId):
@@ -244,6 +251,7 @@ def cancel_order(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["DELETE"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("20 per minute")
 def delete_order_by_id(buyerId, orderId):
     if not is_valid_uuid(orderId):
@@ -259,6 +267,7 @@ def delete_order_by_id(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order", methods = ["GET"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("60 per minute")
 def get_orders_for_buyer(buyerId):
     try:
@@ -349,6 +358,7 @@ def validate_xml():
 
 @api.route("/v1/buyer/<buyerId>/order/CANCELED", methods=["DELETE"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("20 per minute")
 def delete_cancelled_orders(buyerId):
     with PostgresDB() as db:
