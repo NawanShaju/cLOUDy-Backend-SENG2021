@@ -195,11 +195,12 @@ def upsert_address(db, address_fields):
 def update_order(db, data, buyerId, orderId):
     query = """
         UPDATE orders SET
-            order_date      = COALESCE(%(order_date)s, order_date),
-            delivery_date   = COALESCE(%(delivery_date)s, delivery_date),
-            currency_code   = COALESCE(%(currency_code)s, currency_code),
-            address_id      = COALESCE(%(address_id)s, address_id),
-            status          = COALESCE(%(status)s, status)
+            order_date = COALESCE(%(order_date)s, order_date),
+            delivery_date = COALESCE(%(delivery_date)s, delivery_date),
+            currency_code = COALESCE(%(currency_code)s, currency_code),
+            address_id = COALESCE(%(address_id)s, address_id),
+            seller_id = COALESCE(%(seller_id)s, seller_id),
+            status = COALESCE(%(status)s, status)
         WHERE order_id = %(orderId)s
             AND (
                 external_buyer_id = %(buyer_id)s
@@ -212,9 +213,10 @@ def update_order(db, data, buyerId, orderId):
         "delivery_date": data.get("delivery_date"),
         "currency_code": data.get("currency_code"),
         "address_id":    data.get("address_id"),
+        "seller_id":     data.get("seller_id"),
         "status":        data.get("status"),
         "orderId":       orderId,
-        "buyerId":       buyerId
+        "buyer_id":      buyerId
     }
     return db.execute_insert_update_delete(query, params)
 

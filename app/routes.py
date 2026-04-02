@@ -1,9 +1,11 @@
 from flask import Blueprint, jsonify, request, Response
 from app.services.buyer_service import create_buyer_service
 from app.services.seller_service import create_seller_service
+from app.services.db_services.seller_db import get_seller_by_id
+from app.services.db_services.buyer_db import get_buyer_by_id
 from .services.validate_order import validate_order, validate_order_xml
-from .utils.xml_generation import generate_xml
 from .services.api_key import validate_api_key, validate_buyer_auth
+from .utils.xml_generation import generate_xml, generate_xml_v2
 from .services.order_service import (
     get_full_order_service,
     create_order_service,
@@ -155,6 +157,13 @@ def update_order(buyerId, orderId):
     if not is_valid_uuid(orderId):
         return jsonify({"error": "orderId must be a valid UUID"}), 400
     
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+    
+    seller_id = data.get("seller_id")
+    if seller_id and not is_valid_uuid(seller_id):
+        return jsonify({"error": "seller_id must be a valid UUID"}), 400
+    
     if data.get("order_date"):
         data["order_date"] = to_iso_date(data.get("order_date"))
 
@@ -171,14 +180,31 @@ def update_order(buyerId, orderId):
             return jsonify({"error": "Order not found"}), 404
         
         full_order = get_full_order_service(db, buyerId, orderId)
-        xml_string = generate_xml(full_order, orderId, buyerId)
+        if not full_order:
+            return jsonify({"error": "Order not found"}), 404
+ 
+        buyer_data  = None
+        seller_data = None
+ 
+        try:
+            buyer_data = get_buyer_by_id(db, buyerId)
+        except Exception:
+            pass
+ 
+        if buyer_data and seller_id:
+            try:
+                seller_data = get_seller_by_id(db, seller_id)
+            except Exception:
+                pass
+ 
+        if buyer_data:
+            xml_string = generate_xml_v2(full_order, orderId, buyerId, buyer_data, seller_data)
+        else:
+            xml_string = generate_xml(full_order, orderId, buyerId)
+ 
         xml_to_db_update_cancel(db, xml_string, orderId)
-    
-    return Response(
-        xml_string,
-        mimetype='application/xml',
-        status=200
-    )
+ 
+        return Response(xml_string, mimetype="application/xml", status=200)
 
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods = ["GET"])

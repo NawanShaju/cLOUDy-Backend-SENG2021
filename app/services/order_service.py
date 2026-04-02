@@ -180,9 +180,14 @@ def update_order_service(db, data, buyerId, orderId):
         except ValueError as e:
             return {"error": str(e)}, 400
 
-        result = update_order_items(db, orderId, data.get("item"), product_id[0][0])
+        result = update_order_items(db, orderId, data.get("item"), product_id[0])
         if not result:
             return {"error": "Not Updated, invalid product id or order id"}, 400
+        
+    if data.get("seller_id"):
+        seller = get_seller_by_id(db, data.get("seller_id"))
+        if not seller:
+            return {"error": "Seller not found"}, 404
 
     order = update_order(db, data, buyerId, orderId)
     return order
