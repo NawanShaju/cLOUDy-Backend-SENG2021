@@ -84,26 +84,24 @@ def validate_api_key(f):
 
             if not key_is_valid:
                 return jsonify({"error": "Unauthorized"}), 401
-            
-            buyer_id = kwargs.get("buyerId")
-            if buyer_id:
-                with PostgresDB() as db:
-                    owned = validate_buyer_ownership(db, api_key, buyer_id)
-                if not owned:
-                    return jsonify({"error": "You do not own this buyer"}), 403
-
-        # query = """
-        #     SELECT api_key
-        #     FROM clients
-        #     where api_key = %s
-        # """
-        
-        # with PostgresDB() as db:
-        #     key_is_valid = db.execute_query(query, (api_key, ))
-
-        # if not key_is_valid:
-        #     return jsonify({"error": "Unauthorized"}), 401
 
         return f(*args, **kwargs)
 
+    return decorated
+
+def validate_buyer_auth(f):
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        api_key = request.headers.get("api-key")
+        buyer_id = kwargs.get("buyerId")
+
+        with PostgresDB() as db:
+            owned = validate_buyer_ownership(db, api_key, buyer_id)
+
+        if not owned:
+            return jsonify({"error": "You don't own this buyer"}), 403
+        
+        return f(*args, **kwargs)
+    
     return decorated

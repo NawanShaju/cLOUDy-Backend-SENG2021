@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request, Response
 from app.services.order_service import create_order_v2_service
 from app.utils.xml_generation import generate_xml_v2
 from .services.validate_order import validate_order
-from .services.api_key import validate_api_key
+from .services.api_key import validate_api_key, validate_buyer_auth
 from .services.db_services.xml_db import xml_to_db
 from .utils.helper import is_valid_uuid, to_iso_date
 from database.PostgresDB import PostgresDB
@@ -12,6 +12,7 @@ api = Blueprint("v2", __name__)
 
 @api.route("/v2/buyer/<buyerId>/order", methods=["POST"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("10 per minute")
 def create_order_v2(buyerId):
     if not is_valid_uuid(buyerId):

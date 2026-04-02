@@ -3,7 +3,7 @@ from app.services.buyer_service import create_buyer_service
 from app.services.seller_service import create_seller_service
 from .services.validate_order import validate_order, validate_order_xml
 from .utils.xml_generation import generate_xml
-from .services.api_key import validate_api_key
+from .services.api_key import validate_api_key, validate_buyer_auth
 from .services.order_service import (
     get_full_order_service,
     create_order_service,
@@ -144,6 +144,7 @@ def create_seller():
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["PUT"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("100 per hour")
 def update_order(buyerId, orderId):
     data = request.get_json()
@@ -182,6 +183,7 @@ def update_order(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods = ["GET"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("60 per minute")
 def get_order_by_id(buyerId, orderId):
     if not is_valid_uuid(orderId):
@@ -207,6 +209,7 @@ def get_order_by_id(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>/CANCELED", methods=["DELETE"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("20 per minute")
 def cancel_order(buyerId, orderId):
     if not is_valid_uuid(orderId):
@@ -222,6 +225,7 @@ def cancel_order(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["DELETE"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("20 per minute")
 def delete_order_by_id(buyerId, orderId):
     if not is_valid_uuid(orderId):
@@ -237,6 +241,7 @@ def delete_order_by_id(buyerId, orderId):
 
 @api.route("/v1/buyer/<buyerId>/order", methods = ["GET"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("60 per minute")
 def get_orders_for_buyer(buyerId):
     try:
@@ -327,6 +332,7 @@ def validate_xml():
 
 @api.route("/v1/buyer/<buyerId>/order/CANCELED", methods=["DELETE"])
 @validate_api_key
+@validate_buyer_auth
 @limiter.limit("20 per minute")
 def delete_cancelled_orders(buyerId):
     with PostgresDB() as db:
