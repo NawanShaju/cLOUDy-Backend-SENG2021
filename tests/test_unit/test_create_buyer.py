@@ -35,14 +35,14 @@ def valid_buyer_data():
 
 
 def test_create_buyer_missing_party_name_returns_400(mock_db):
-    result = create_buyer_service(mock_db, {"customer_assigned_account_id": "X01"})
+    result = create_buyer_service(mock_db, {"customer_assigned_account_id": "X01"}, "test-api-key")
     assert isinstance(result, tuple)
     assert result[1] == 400
     assert result[0]["error"] == "party_name is required"
 
 
 def test_create_buyer_missing_account_id_returns_400(mock_db):
-    result = create_buyer_service(mock_db, {"party_name": "Corp"})
+    result = create_buyer_service(mock_db, {"party_name": "Corp"}, "test-api-key")
     assert isinstance(result, tuple)
     assert result[1] == 400
     assert result[0]["error"] == "customer_assigned_account_id is required"
@@ -53,7 +53,7 @@ def test_create_buyer_duplicate_account_id_returns_409(monkeypatch, mock_db, val
         "app.services.buyer_service.find_buyer_by_account_id",
         lambda db, acc_id: [("existing-buyer-id",)]
     )
-    result = create_buyer_service(mock_db, valid_buyer_data)
+    result = create_buyer_service(mock_db, valid_buyer_data, "test-api-key")
     assert isinstance(result, tuple)
     assert result[1] == 409
     assert "already exists" in result[0]["error"]
@@ -64,8 +64,9 @@ def test_create_buyer_success_returns_buyer_id(monkeypatch, mock_db, valid_buyer
     monkeypatch.setattr("app.services.buyer_service.insert_address", lambda db, a: [("addr-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_tax_scheme", lambda db, t: [("tax-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_buyer", lambda db, d, a, t: [("new-buyer-id",)])
+    monkeypatch.setattr("app.services.buyer_service.insert_auth", lambda db, k, b: None)
 
-    result = create_buyer_service(mock_db, valid_buyer_data)
+    result = create_buyer_service(mock_db, valid_buyer_data, "test-api-key")
     assert isinstance(result, dict)
     assert result["buyer_id"] == "new-buyer-id"
 
@@ -78,8 +79,9 @@ def test_create_buyer_without_address_skips_insert(monkeypatch, mock_db, valid_b
     monkeypatch.setattr("app.services.buyer_service.insert_address", lambda db, a: address_calls.append(a) or [("addr-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_tax_scheme", lambda db, t: [("tax-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_buyer", lambda db, d, a, t: [("buyer-id",)])
+    monkeypatch.setattr("app.services.buyer_service.insert_auth", lambda db, k, b: None)
 
-    create_buyer_service(mock_db, valid_buyer_data)
+    create_buyer_service(mock_db, valid_buyer_data, "test-api-key")
     assert len(address_calls) == 0
 
 
@@ -90,8 +92,9 @@ def test_create_buyer_without_tax_scheme_skips_insert(monkeypatch, mock_db, vali
     monkeypatch.setattr("app.services.buyer_service.insert_address", lambda db, a: [("addr-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_tax_scheme", lambda db, t: tax_calls.append(t) or [("tax-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_buyer", lambda db, d, a, t: [("buyer-id",)])
+    monkeypatch.setattr("app.services.buyer_service.insert_auth", lambda db, k, b: None)
 
-    create_buyer_service(mock_db, valid_buyer_data)
+    create_buyer_service(mock_db, valid_buyer_data, "test-api-key")
     assert len(tax_calls) == 0
 
 
@@ -101,6 +104,7 @@ def test_create_buyer_passes_correct_params_to_insert(monkeypatch, mock_db, vali
     monkeypatch.setattr("app.services.buyer_service.find_buyer_by_account_id", lambda db, a: None)
     monkeypatch.setattr("app.services.buyer_service.insert_address", lambda db, a: [("addr-id",)])
     monkeypatch.setattr("app.services.buyer_service.insert_tax_scheme", lambda db, t: [("tax-id",)])
+    monkeypatch.setattr("app.services.buyer_service.insert_auth", lambda db, k, b: None)
 
     def fake_insert_buyer(db, data, addr_id, tax_id):
         captured["addr_id"] = addr_id
@@ -109,7 +113,7 @@ def test_create_buyer_passes_correct_params_to_insert(monkeypatch, mock_db, vali
         return [("buyer-id",)]
 
     monkeypatch.setattr("app.services.buyer_service.insert_buyer", fake_insert_buyer)
-    create_buyer_service(mock_db, valid_buyer_data)
+    create_buyer_service(mock_db, valid_buyer_data, "test-api-key")
 
     assert captured["party_name"] == "IYT Corporation"
     assert captured["addr_id"] == "addr-id"

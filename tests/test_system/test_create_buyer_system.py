@@ -103,7 +103,7 @@ def test_create_buyer_duplicate_account_id(monkeypatch, client, valid_buyer):
     )
     monkeypatch.setattr(
         "app.routes.create_buyer_service",
-        lambda db, data: ({"error": "A buyer with this customer_assigned_account_id already exists"}, 409)
+        lambda db, data, api_key: ({"error": "A buyer with this customer_assigned_account_id already exists"}, 409)
     )
     response = client.post("/v1/buyer", json=valid_buyer, headers=API_HEADERS)
     assert response.status_code == 409
@@ -114,7 +114,7 @@ def test_create_buyer_success_status_code(monkeypatch, client, valid_buyer):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
     monkeypatch.setattr(
         "app.routes.create_buyer_service",
-        lambda db, data: {"buyer_id": "new-buyer-uuid-1234"}
+        lambda db, data, api_key: {"buyer_id": "new-buyer-uuid-1234"}
     )
     response = client.post("/v1/buyer", json=valid_buyer, headers=API_HEADERS)
     assert response.status_code == 201
@@ -124,7 +124,7 @@ def test_create_buyer_success_returns_buyer_id(monkeypatch, client, valid_buyer)
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
     monkeypatch.setattr(
         "app.routes.create_buyer_service",
-        lambda db, data: {"buyer_id": "new-buyer-uuid-1234"}
+        lambda db, data, api_key: {"buyer_id": "new-buyer-uuid-1234"}
     )
     response = client.post("/v1/buyer", json=valid_buyer, headers=API_HEADERS)
     data = response.get_json()
@@ -135,7 +135,7 @@ def test_create_buyer_success_returns_message(monkeypatch, client, valid_buyer):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
     monkeypatch.setattr(
         "app.routes.create_buyer_service",
-        lambda db, data: {"buyer_id": "new-buyer-uuid-1234"}
+        lambda db, data, api_key: {"buyer_id": "new-buyer-uuid-1234"}
     )
     response = client.post("/v1/buyer", json=valid_buyer, headers=API_HEADERS)
     assert response.get_json()["message"] == "Buyer created successfully"
@@ -146,7 +146,7 @@ def test_create_buyer_minimal_payload(monkeypatch, client):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyDB())
     monkeypatch.setattr(
         "app.routes.create_buyer_service",
-        lambda db, data: {"buyer_id": "minimal-buyer-id"}
+        lambda db, data, api_key: {"buyer_id": "minimal-buyer-id"}
     )
     response = client.post(
         "/v1/buyer",
