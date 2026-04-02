@@ -31,6 +31,8 @@ security:
   - ApiKeyAuth: []
 
 tags:
+  - name: System
+    description: System health and monitoring
   - name: Auth
     description: Operations for authentication
   - name: Buyers
@@ -59,8 +61,6 @@ tags:
       When omitted, the `supplier` field in the request body is used as a plain name fallback.
   - name: Validation
     description: Operations for XML validation
-  - name: System
-    description: System health and monitoring
 
 paths:
 
@@ -473,6 +473,7 @@ paths:
             schema:
               $ref: '#/components/schemas/OrderUpdateRequest'
             example:
+              seller_id: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
               order_date: "2026-02-27"
               delivery_date: "2026-03-10"
               currency_code: "AUD"
@@ -1040,6 +1041,9 @@ components:
     OrderUpdateRequest:
       type: object
       properties:
+        seller_id:
+          type: string
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
         order_date:
           type: string
           format: date
