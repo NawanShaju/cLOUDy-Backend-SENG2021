@@ -25,13 +25,16 @@ def test_delete_order_not_found(mock_db):
 def test_delete_order_forbidden(mock_db):
     mock_db.execute_query.return_value = [
         (
-            "order1",      # order_id
-            "other_buyer", # external_buyer_id
+            "order1", 
+            "other_buyer",
             "x",
             "x",
             "x",
             "x",
-            "CANCELED"
+            "CANCELED",
+            None,
+            None,
+            None
         )
     ]
 

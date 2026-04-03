@@ -19,7 +19,7 @@ def test_cancel_order_not_found(mock_db):
 
 def test_cancel_order_wrong_buyer(mock_db):
     mock_db.execute_query.return_value = [
-        ("order1", "other-buyer", None, None, None, None, "CREATED")
+        ("order1", "other-buyer", None, None, None, None, "CREATED", None, None, None)
     ]
 
     result = cancel_order_service(mock_db, "buyer1", "order1")

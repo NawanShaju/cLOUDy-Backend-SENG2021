@@ -113,7 +113,10 @@ def test_cancel_order_forbidden(monkeypatch, client):
                 None,
                 None,
                 None,
-                "CREATED"
+                "CREATED",
+                None,
+                None,
+                None
             )]
 
     monkeypatch.setattr("app.routes.PostgresDB", lambda: WrongBuyerDB())

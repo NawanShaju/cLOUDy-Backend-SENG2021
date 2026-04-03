@@ -106,7 +106,10 @@ def test_delete_order_forbidden(monkeypatch, client):
                 "x",
                 "x",
                 "x",
-                "CANCELED"
+                "CANCELED",
+                None,
+                None,
+                None
             )]
 
     monkeypatch.setattr("app.routes.PostgresDB", lambda: ForbiddenDB())
