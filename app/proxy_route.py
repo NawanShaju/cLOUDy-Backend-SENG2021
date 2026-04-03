@@ -25,7 +25,8 @@ def proxy_request():
             url=url,
             headers=headers,
             params=params,
-            json=data,
+            data=data if isinstance(data, str) else None,
+            json=data if not isinstance(data, str) else None,
             timeout=15,
         )
         return Response(
