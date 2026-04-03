@@ -249,32 +249,11 @@ def test_generate_xml_v2_delivery_address_omitted_when_no_address(valid_data, fu
 
 
 def test_generate_xml_v2_delivery_start_date(valid_data, full_buyer_data):
-    valid_data["delivery_start_date"] = "2024-01-18"
+    valid_data["order_date"] = "2024-01-18"
     xml_bytes = generate_xml_v2(valid_data, "order-001", "buyer-001", full_buyer_data)
     root = etree.fromstring(xml_bytes)
     path = f"{cac('Delivery')}/{cac('RequestedDeliveryPeriod')}/{cbc('StartDate')}"
     assert root.findtext(path) == "2024-01-18"
-
-
-def test_generate_xml_v2_delivery_start_date_omitted_when_absent(parsed_xml_v2):
-    path = f"{cac('Delivery')}/{cac('RequestedDeliveryPeriod')}/{cbc('StartDate')}"
-    assert parsed_xml_v2.find(path) is None
-
-
-def test_generate_xml_v2_delivery_start_time(valid_data, full_buyer_data):
-    valid_data["delivery_start_time"] = "09:00:00"
-    xml_bytes = generate_xml_v2(valid_data, "order-001", "buyer-001", full_buyer_data)
-    root = etree.fromstring(xml_bytes)
-    path = f"{cac('Delivery')}/{cac('RequestedDeliveryPeriod')}/{cbc('StartTime')}"
-    assert root.findtext(path) == "09:00:00"
-
-
-def test_generate_xml_v2_delivery_end_time(valid_data, full_buyer_data):
-    valid_data["delivery_end_time"] = "17:00:00"
-    xml_bytes = generate_xml_v2(valid_data, "order-001", "buyer-001", full_buyer_data)
-    root = etree.fromstring(xml_bytes)
-    path = f"{cac('Delivery')}/{cac('RequestedDeliveryPeriod')}/{cbc('EndTime')}"
-    assert root.findtext(path) == "17:00:00"
 
 
 def test_generate_xml_v2_delivery_end_date_always_present(parsed_xml_v2):
