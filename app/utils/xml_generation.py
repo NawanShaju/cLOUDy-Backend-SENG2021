@@ -255,13 +255,10 @@ def generate_xml_v2(data, orderId, buyerId, buyer_data, seller_data=None):
             _build_address_element(delivery_address, address_data)
 
         requested = etree.SubElement(delivery, cac("RequestedDeliveryPeriod"))
-        if data.get("delivery_start_date"):
-            etree.SubElement(requested, cbc("StartDate")).text = data["delivery_start_date"]
-        if data.get("delivery_start_time"):
-            etree.SubElement(requested, cbc("StartTime")).text = data["delivery_start_time"]
+        if data.get("order_date"):
+            etree.SubElement(requested, cbc("StartDate")).text = data["order_date"]
+            
         etree.SubElement(requested, cbc("EndDate")).text = delivery_date_str
-        if data.get("delivery_end_time"):
-            etree.SubElement(requested, cbc("EndTime")).text = data["delivery_end_time"]
 
     currency_code = data.get("currency_code", "AUD")
     items_data = data.get("items", [])
