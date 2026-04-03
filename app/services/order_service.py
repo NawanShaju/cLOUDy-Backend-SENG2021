@@ -200,7 +200,7 @@ def cancel_order_service(db, buyer_id, order_id):
     
     order = result[0]
     
-    if order[1] != buyer_id:
+    if order[1] != buyer_id and order[9] != buyer_id:
         return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
     if order[6] in ("CANCELED", "PROCESSED", "FINALISED"):
         return {"status": 409, "error": "Order cannot be canceled due to current status"}
@@ -220,7 +220,7 @@ def delete_order_service(db, buyer_id, order_id):
 
     order = result[0]
 
-    if order[1] != buyer_id:
+    if order[1] != buyer_id and order[9] != buyer_id:
         return {"status": 403, "error": "Forbidden - buyer does not have access to this order"}
 
     if order[6] != "CANCELED":
