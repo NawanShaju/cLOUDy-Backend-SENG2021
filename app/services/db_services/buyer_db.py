@@ -124,6 +124,15 @@ def get_buyer_by_id(db, buyer_id):
         } if result[14] else None,
     }
     
+def get_buyers_by_api_key(db, api_key):
+    query = """
+        SELECT b.buyer_id, b.party_name, b.customer_assigned_account_id
+        FROM buyers b
+        JOIN auth a ON b.buyer_id::text = a.buyer_id
+        WHERE a.api_key = %(api_key)s
+    """
+    return db.execute_query(query, {"api_key": api_key}, fetch_all=True)
+
 def insert_auth(db, api_key, buyer_id):
     query = """
         INSERT INTO auth (api_key, buyer_id)
