@@ -1,59 +1,45 @@
 import requests
 from flask import Blueprint, jsonify, request, Response
 from app.services.api_key import validate_api_key
- 
+
 proxy = Blueprint("proxy", __name__)
 
-@proxy.route("/proxy", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-@validate_api_key
-def forward_request():
-    target_url = request.args.get("url")
-    if not target_url:
-        return jsonify({"error": "Missing required query parameter: url"}), 400
- 
-    forward_params = {k: v for k, v in request.args.items() if k != "url"}
- 
-    excluded_headers = {
-        "host", "content-length", "transfer-encoding",
-        "connection", "keep-alive", "proxy-authenticate",
-        "proxy-authorization", "te", "trailers", "upgrade",
-    }
-    forward_headers = {
-        k: v for k, v in request.headers.items()
-        if k.lower() not in excluded_headers
-    }
- 
-    body = request.get_data()
- 
+@proxy.route("/v1/proxy", methods=["POST"])
+def proxy_request():
+    body = request.get_json()
+    if not body:
+        return jsonify({"error": "Request body is required"}), 400
+
+    url = body.get("url")
+    if not url:
+        return jsonify({"error": "url is required"}), 400
+
+    method = body.get("method", "GET").upper()
+    headers = body.get("headers", {})
+    params = body.get("params", {})
+    data = body.get("body")
+
     try:
         response = requests.request(
-            method=request.method,
-            url=target_url,
-            headers=forward_headers,
-            params=forward_params,
-            data=body,
-            timeout=30,
-            allow_redirects=True,
+            method=method,
+            url=url,
+            headers=headers,
+            params=params,
+            json=data,
+            timeout=15,
         )
-    except requests.exceptions.ConnectionError:
-        return jsonify({"error": f"Could not connect to {target_url}"}), 502
+        return Response(
+            response.content,
+            status=response.status_code,
+            content_type=response.headers.get("Content-Type", "application/json"),
+        )
+
     except requests.exceptions.Timeout:
-        return jsonify({"error": f"Request to {target_url} timed out"}), 504
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": str(e)}), 502
- 
-    excluded_response_headers = {
-        "content-encoding", "transfer-encoding", "connection",
-        "keep-alive", "proxy-authenticate", "proxy-authorization",
-        "te", "trailers", "upgrade",
-    }
-    response_headers = {
-        k: v for k, v in response.headers.items()
-        if k.lower() not in excluded_response_headers
-    }
- 
-    return Response(
-        response.content,
-        status=response.status_code,
-        headers=response_headers,
-    )
+        return jsonify({"error": "Request to external API timed out"}), 504
+
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": f"Could not connect to {url}"}), 502
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
