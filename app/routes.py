@@ -370,7 +370,9 @@ def get_all_buyers():
             {
                 "buyerId": str(row[0]),
                 "party_name": row[1],
-                "customer_assigned_account_id": row[2]
+                "customer_assigned_account_id": row[2],
+                "contact_name": row[3],
+                "contact_email": row[4]
             }
             for row in buyers
         ]
