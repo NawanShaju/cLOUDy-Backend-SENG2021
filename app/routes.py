@@ -5,6 +5,7 @@ from app.services.db_services.seller_db import get_seller_by_id
 from app.services.db_services.buyer_db import get_buyer_by_id
 from .services.validate_order import validate_order, validate_order_xml
 from .services.api_key import validate_api_key, validate_buyer_auth
+from .services.db_services.buyer_db import get_buyers_by_api_key
 from .utils.xml_generation import generate_xml, generate_xml_v2
 from .services.order_service import (
     get_full_order_service,
@@ -352,6 +353,28 @@ def validate_xml():
     except Exception as e:
         return jsonify({"valid": False, "errors": [str(e)]}), 500
     
+@api.route("/v1/buyers", methods=["GET"])
+@validate_api_key
+@limiter.limit("60 per minute")
+def get_all_buyers():
+    api_key = request.headers.get("api-key")
+
+    with PostgresDB() as db:
+        buyers = get_buyers_by_api_key(db, api_key)
+
+    if not buyers:
+        return jsonify({"buyers": []}), 200
+
+    return jsonify({
+        "buyers": [
+            {
+                "buyerId": str(row[0]),
+                "party_name": row[1],
+                "customer_assigned_account_id": row[2]
+            }
+            for row in buyers
+        ]
+    }), 200
 
 @api.route("/v1/buyer/<buyerId>/order/CANCELED", methods=["DELETE"])
 @validate_api_key
