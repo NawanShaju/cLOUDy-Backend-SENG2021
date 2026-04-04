@@ -315,10 +315,7 @@ def get_orders_for_buyer(buyerId):
             )
 
         if orders is None:
-            return jsonify({
-                "status": 404,
-                "error": "Buyer not found"
-            }), 404
+            orders = []
         
         return jsonify({
             "status": 200,
