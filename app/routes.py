@@ -5,6 +5,7 @@ from app.services.db_services.seller_db import get_seller_by_id
 from app.services.db_services.buyer_db import get_buyer_by_id
 from .services.validate_order import validate_order, validate_order_xml
 from .services.api_key import validate_api_key, validate_buyer_auth
+from .services.db_services.seller_db import get_all_sellers
 from .services.db_services.buyer_db import get_buyers_by_api_key
 from .utils.xml_generation import generate_xml, generate_xml_v2
 from .services.order_service import (
@@ -376,6 +377,27 @@ def get_all_buyers():
                 "customer_assigned_account_id": row[2]
             }
             for row in buyers
+        ]
+    }), 200
+
+@api.route("/v1/sellers", methods=["GET"])
+@validate_api_key
+@limiter.limit("60 per minute")
+def get_all_sellers_route():
+    with PostgresDB() as db:
+        sellers = get_all_sellers(db)
+
+    if not sellers:
+        return jsonify({"sellers": []}), 200
+
+    return jsonify({
+        "sellers": [
+            {
+                "seller_id": str(row[0]),
+                "party_name": row[1],
+                "customer_assigned_account_id": row[2]
+            }
+            for row in sellers
         ]
     }), 200
 
