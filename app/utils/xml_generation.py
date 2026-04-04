@@ -239,11 +239,10 @@ def generate_xml_v2(data, orderId, buyerId, buyer_data, seller_data=None):
  
         if seller_data.get("contact"):
             _build_contact(seller_party_inner, seller_data["contact"])
- 
     else:
         seller_party_inner = etree.SubElement(seller_party, cac("Party"))
-        seller_name_el     = etree.SubElement(seller_party_inner, cac("PartyName"))
-        etree.SubElement(seller_name_el, cbc("Name")).text = data.get("supplier", "")
+        seller_name_el = etree.SubElement(seller_party_inner, cac("PartyName"))
+        etree.SubElement(seller_name_el, cbc("Name")).text = "No Seller Provided"
  
     address_data      = data.get("address", {})
     delivery_date_str = data.get("delivery_date", "")
