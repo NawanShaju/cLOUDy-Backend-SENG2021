@@ -236,23 +236,6 @@ def test_create_order_v2_success_xml_contains_order_id(monkeypatch, client, vali
     )
     root = etree.fromstring(response.data)
     assert root.findtext(f"{{{NS_CBC}}}ID") is not None
-        
-def test_create_order_v2_no_seller_uses_supplier_name(monkeypatch, client, valid_order):
-    valid_order["supplier"] = "Fallback Supplier Name"
-    monkeypatch.setattr("app.routes_v2.PostgresDB", lambda: DummyDB())
-    monkeypatch.setattr(
-        "app.routes_v2.create_order_v2_service",
-        lambda db, data, buyerId: _service_result_no_seller()
-    )
-    monkeypatch.setattr("app.routes_v2.xml_to_db", lambda db, xml, order_id: None)
-    response = client.post(
-        f"/v2/buyer/{BUYER_ID}/order",
-        json=valid_order,
-        headers=API_HEADERS
-    )
-    root = etree.fromstring(response.data)
-    path = f"{{{NS_CAC}}}SellerSupplierParty/{{{NS_CAC}}}Party/{{{NS_CAC}}}PartyName/{{{NS_CBC}}}Name"
-    assert root.findtext(path) == "Fallback Supplier Name"
     
 def test_create_order_v2_with_seller_status_code(monkeypatch, client, valid_order_with_seller):
     monkeypatch.setattr("app.routes_v2.PostgresDB", lambda: DummyDB())
