@@ -102,3 +102,10 @@ def get_seller_by_id(db, seller_id):
             "country_code": result[18],
         } if result[14] else None,
     }
+
+def get_all_sellers(db):
+    query = """
+        SELECT seller_id, party_name, customer_assigned_account_id
+        FROM sellers
+    """
+    return db.execute_query(query, {}, fetch_all=True)
