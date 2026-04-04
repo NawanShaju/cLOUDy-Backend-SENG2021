@@ -317,10 +317,7 @@ def get_orders_for_buyer(buyerId):
             )
 
         if orders is None:
-            return jsonify({
-                "status": 404,
-                "error": "Buyer not found"
-            }), 404
+            orders = []
         
         return jsonify({
             "status": 200,
@@ -374,7 +371,9 @@ def get_all_buyers():
             {
                 "buyerId": str(row[0]),
                 "party_name": row[1],
-                "customer_assigned_account_id": row[2]
+                "customer_assigned_account_id": row[2],
+                "contact_name": row[3],
+                "contact_email": row[4]
             }
             for row in buyers
         ]
