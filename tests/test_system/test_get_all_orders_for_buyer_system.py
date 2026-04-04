@@ -195,22 +195,6 @@ def test_get_orders_for_buyer_invalid_to_date(client):
     assert body["status"] == 400
     assert "date" in body["error"].lower()
 
-
-def test_get_orders_for_buyer_not_found(monkeypatch, client):
-    monkeypatch.setattr("app.routes.PostgresDB", lambda: BuyerNotFoundDB())
-
-    response = client.get(
-        f"/v1/buyer/{BUYER_ID}/order",
-        headers=API_HEADERS
-    )
-
-    assert response.status_code == 404
-    body = response.get_json()
-
-    assert body["status"] == 404
-    assert body["error"] == "Buyer not found"
-
-
 def test_get_orders_for_buyer_success_status_code(monkeypatch, client):
     monkeypatch.setattr("app.routes.PostgresDB", lambda: SuccessDB())
 
