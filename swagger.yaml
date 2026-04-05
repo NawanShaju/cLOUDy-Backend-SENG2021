@@ -185,6 +185,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
+    get:
+      tags:
+        - Buyers
+      summary: Get all buyers for API key
+      description: |
+        Returns all buyers associated with the provided API key.
+      responses:
+        "200":
+          description: List of buyers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuyersListResponse'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
   /v1/seller:
     post:
       tags:
@@ -235,6 +260,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    get:
+      tags:
+        - Sellers
+      summary: Get all sellers
+      description: |
+        Returns all sellers in the system.
+      responses:
+        "200":
+          description: List of sellers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellersListResponse'
         "401":
           description: Invalid or missing API key
           content:
@@ -1403,3 +1454,45 @@ components:
         error:
           type: string
           example: "Request to external API timed out"
+
+    BuyersListResponse:
+      type: object
+      properties:
+        buyers:
+          type: array
+          items:
+            type: object
+            properties:
+              buyerId:
+                type: string
+                example: "3f7a2c1e-4b5d-4e6f-9a8b-1c2d3e4f5a6b"
+              party_name:
+                type: string
+                example: "IYT Corporation"
+              customer_assigned_account_id:
+                type: string
+                example: "XFB01"
+              contact_name:
+                type: string
+                example: "Mr Fred Churchill"
+              contact_email:
+                type: string
+                example: "fred@iytcorporation.gov.uk"
+
+    SellersListResponse:
+      type: object
+      properties:
+        sellers:
+          type: array
+          items:
+            type: object
+            properties:
+              seller_id:
+                type: string
+                example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+              party_name:
+                type: string
+                example: "Consortial Supplies"
+              customer_assigned_account_id:
+                type: string
+                example: "SUP-98765"
