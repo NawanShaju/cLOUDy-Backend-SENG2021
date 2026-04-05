@@ -155,3 +155,58 @@ def test_create_buyer_minimal_payload(monkeypatch, client):
     )
     assert response.status_code == 201
     assert response.get_json()["buyerId"] == "minimal-buyer-id"
+    
+class DummyBuyersDB:
+    def __enter__(self):
+        return self
+ 
+    def __exit__(self, *a):
+        pass
+ 
+    def execute_query(self, query, params, fetch_all=False):
+        return [
+            ("70f4810c-5904-454c-8b35-2876e01d9b08", "IYT Corporation", "XFB01", "Fred Churchill", "fred@iyt.com"),
+            ("a1b2c3d4-e5f6-7890-abcd-ef1234567890", "Acme Corp",       "XFB02", "Jane Doe",       "jane@acme.com"),
+        ]
+ 
+ 
+class EmptyBuyersDB:
+    def __enter__(self):
+        return self
+ 
+    def __exit__(self, *a):
+        pass
+ 
+    def execute_query(self, query, params, fetch_all=False):
+        return []
+ 
+ 
+class TestGetAllBuyers:
+ 
+    def test_returns_200(self, monkeypatch, client):
+        monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyBuyersDB())
+        response = client.get("/v1/buyers", headers=API_HEADERS)
+        assert response.status_code == 200
+ 
+    def test_returns_buyers_list(self, monkeypatch, client):
+        monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyBuyersDB())
+        response = client.get("/v1/buyers", headers=API_HEADERS)
+        data = response.get_json()
+        assert "buyers" in data
+        assert len(data["buyers"]) == 2
+ 
+    def test_buyer_fields_mapped_correctly(self, monkeypatch, client):
+        monkeypatch.setattr("app.routes.PostgresDB", lambda: DummyBuyersDB())
+        response = client.get("/v1/buyers", headers=API_HEADERS)
+        buyer = response.get_json()["buyers"][0]
+        assert buyer["buyerId"] == "70f4810c-5904-454c-8b35-2876e01d9b08"
+        assert buyer["party_name"] == "IYT Corporation"
+        assert buyer["customer_assigned_account_id"] == "XFB01"
+        assert buyer["contact_name"] == "Fred Churchill"
+        assert buyer["contact_email"] == "fred@iyt.com"
+ 
+    def test_empty_buyers_returns_empty_list(self, monkeypatch, client):
+        monkeypatch.setattr("app.routes.PostgresDB", lambda: EmptyBuyersDB())
+        response = client.get("/v1/buyers", headers=API_HEADERS)
+        assert response.status_code == 200
+        assert response.get_json() == {"buyers": []}
