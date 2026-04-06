@@ -210,6 +210,150 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerError'
+
+  /v1/buyer/{buyerId}:
+    put:
+      tags:
+        - Buyers
+      summary: Update buyer
+      description: |
+        Updates an existing buyer associated with the provided API key.
+
+        Partial updates are supported. You may update one or more of the following:
+        - party_name
+        - customer_assigned_account_id
+        - supplier_assigned_account_id
+        - address
+        - contact
+        - tax_scheme
+      parameters:
+        - name: buyerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBuyerRequest'
+            example:
+              party_name: "Updated Buyer Pty Ltd"
+              supplier_assigned_account_id: "SUP-NEW-001"
+              address:
+                street: "20 George St"
+                city: "Sydney"
+                state: "NSW"
+                postal_code: "2000"
+                country_code: "AU"
+              contact:
+                name: "Updated Contact"
+                telephone: "0400000000"
+                telefax: "0299999999"
+                email: "updated@buyer.com"
+              tax_scheme:
+                registration_name: "Updated Tax Name"
+                company_id: "999999"
+                exemption_reason: "None"
+                scheme_id: "GST"
+                tax_type_code: "GST"
+      responses:
+        "200":
+          description: Buyer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateBuyerResponse'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "403":
+          description: Not authorised to update this buyer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        "404":
+          description: Buyer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuyerNotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    delete:
+      tags:
+        - Buyers
+      summary: Delete buyer
+      description: |
+        Deletes a buyer only if all related orders are hard deleted.
+      parameters:
+        - name: buyerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Buyer deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteBuyerResponse'
+        "400":
+          description: Invalid buyerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "403":
+          description: Not authorised to delete this buyer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        "404":
+          description: Buyer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuyerNotFoundError'
+        "409":
+          description: Buyer has existing orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteBuyerConflictError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
   /v1/seller:
     post:
       tags:
@@ -1039,6 +1183,47 @@ components:
           type: string
           example: "Buyer created successfully"
 
+    UpdateBuyerRequest:
+      type: object
+      properties:
+        customer_assigned_account_id:
+          type: string
+          example: "XFB01"
+        supplier_assigned_account_id:
+          type: string
+          example: "GT00978567"
+        party_name:
+          type: string
+          example: "Updated Buyer Pty Ltd"
+        address:
+          $ref: '#/components/schemas/Address'
+        tax_scheme:
+          $ref: '#/components/schemas/TaxScheme'
+        contact:
+          $ref: '#/components/schemas/Contact'
+
+    UpdateBuyerResponse:
+      type: object
+      properties:
+        buyerId:
+          type: string
+          format: uuid
+          example: "3f7a2c1e-4b5d-4e6f-9a8b-1c2d3e4f5a6b"
+        message:
+          type: string
+          example: "Buyer updated successfully"
+
+    DeleteBuyerResponse:
+      type: object
+      properties:
+        buyerId:
+          type: string
+          format: uuid
+          example: "3f7a2c1e-4b5d-4e6f-9a8b-1c2d3e4f5a6b"
+        message:
+          type: string
+          example: "Buyer deleted successfully"
+
     CreateSellerRequest:
       type: object
       required:
@@ -1375,6 +1560,13 @@ components:
         error:
           type: string
           example: "Order cannot be deleted unless status is CANCELED"
+
+    DeleteBuyerConflictError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Buyer cannot be deleted because related orders still exist. All related orders must be hard deleted first."
 
     CancelConflictError:
       type: object
