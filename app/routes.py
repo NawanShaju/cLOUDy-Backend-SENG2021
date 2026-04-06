@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, Response
-from app.services.buyer_service import create_buyer_service
+from app.services.buyer_service import (create_buyer_service, update_buyer_service, delete_buyer_service)
 from app.services.seller_service import create_seller_service
 from app.services.db_services.seller_db import get_seller_by_id
 from app.services.db_services.buyer_db import get_buyer_by_id
@@ -127,7 +127,52 @@ def create_buyer():
         "buyerId": result["buyer_id"],
         "message": "Buyer created successfully"
     }), 201
-    
+
+@api.route("/v1/buyer/<buyerId>", methods=["PUT"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def update_buyer(buyerId):
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Invalid Json Provided"}), 400
+
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+
+    api_key = request.headers.get("api-key")
+
+    with PostgresDB() as db:
+        result = update_buyer_service(db, buyerId, data, api_key)
+
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+
+    return jsonify({
+        "buyerId": result["buyer_id"],
+        "message": result["message"]
+    }), 200
+
+@api.route("/v1/buyer/<buyerId>", methods=["DELETE"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def delete_buyer(buyerId):
+    if not is_valid_uuid(buyerId):
+        return jsonify({"error": "buyerId must be a valid UUID"}), 400
+
+    api_key = request.headers.get("api-key")
+
+    with PostgresDB() as db:
+        result = delete_buyer_service(db, buyerId, api_key)
+
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+
+    return jsonify({
+        "buyerId": result["buyer_id"],
+        "message": result["message"]
+    }), 200   
+
 @api.route("/v1/seller", methods=["POST"])
 @validate_api_key
 @limiter.limit("20 per minute")
