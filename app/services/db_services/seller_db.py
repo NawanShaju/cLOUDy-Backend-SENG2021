@@ -109,3 +109,77 @@ def get_all_sellers(db):
         FROM sellers
     """
     return db.execute_query(query, {}, fetch_all=True)
+
+def update_seller(db, seller_id, data, address_id=None, tax_scheme_id=None):
+    fields = []
+    params = {"seller_id": str(seller_id)}
+
+    if "customer_assigned_account_id" in data:
+        fields.append("customer_assigned_account_id = %(customer_assigned_account_id)s")
+        params["customer_assigned_account_id"] = data.get("customer_assigned_account_id")
+
+    if "supplier_assigned_account_id" in data:
+        fields.append("supplier_assigned_account_id = %(supplier_assigned_account_id)s")
+        params["supplier_assigned_account_id"] = data.get("supplier_assigned_account_id")
+
+    if "party_name" in data:
+        fields.append("party_name = %(party_name)s")
+        params["party_name"] = data.get("party_name")
+
+    if address_id is not None:
+        fields.append("address_id = %(address_id)s")
+        params["address_id"] = address_id
+
+    if tax_scheme_id is not None:
+        fields.append("tax_scheme_id = %(tax_scheme_id)s")
+        params["tax_scheme_id"] = tax_scheme_id
+
+    contact = data.get("contact")
+    if contact:
+        if "name" in contact:
+            fields.append("contact_name = %(contact_name)s")
+            params["contact_name"] = contact.get("name")
+
+        if "telephone" in contact:
+            fields.append("contact_telephone = %(contact_telephone)s")
+            params["contact_telephone"] = contact.get("telephone")
+
+        if "telefax" in contact:
+            fields.append("contact_telefax = %(contact_telefax)s")
+            params["contact_telefax"] = contact.get("telefax")
+
+        if "email" in contact:
+            fields.append("contact_email = %(contact_email)s")
+            params["contact_email"] = contact.get("email")
+
+    if not fields:
+        return False
+
+    query = f"""
+        UPDATE sellers
+        SET {", ".join(fields)}
+        WHERE seller_id = %(seller_id)s
+    """
+
+    db.execute_insert_update_delete(query, params)
+    return True
+
+
+def seller_has_existing_orders(db, seller_id):
+    query = """
+        SELECT 1
+        FROM orders
+        WHERE seller_id = %(seller_id)s
+        LIMIT 1
+    """
+    result = db.execute_query(query, {"seller_id": str(seller_id)})
+    return bool(result)
+
+
+def delete_seller(db, seller_id):
+    query = """
+        DELETE FROM sellers
+        WHERE seller_id = %(seller_id)s
+        RETURNING seller_id
+    """
+    return db.execute_insert_update_delete(query, {"seller_id": str(seller_id)})

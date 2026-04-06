@@ -443,6 +443,137 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
+  /v1/seller/{sellerId}:
+    put:
+      tags:
+        - Sellers
+      summary: Update seller
+      description: |
+        Updates an existing seller.
+
+        Partial updates are supported. You may update one or more of the following:
+        - party_name
+        - customer_assigned_account_id
+        - supplier_assigned_account_id
+        - address
+        - contact
+        - tax_scheme
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSellerRequest'
+            example:
+              party_name: "Updated Seller Pty Ltd"
+              supplier_assigned_account_id: "SUP-NEW-001"
+              address:
+                street: "20 George St"
+                city: "Sydney"
+                state: "NSW"
+                postal_code: "2000"
+                country_code: "AU"
+              contact:
+                name: "Updated Seller Contact"
+                telephone: "0400000000"
+                telefax: "0299999999"
+                email: "updated@seller.com"
+              tax_scheme:
+                registration_name: "Updated Seller Tax Name"
+                company_id: "999999"
+                exemption_reason: "None"
+                scheme_id: "GST"
+                tax_type_code: "GST"
+      responses:
+        "200":
+          description: Seller updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateSellerResponse'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Seller not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerNotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    delete:
+      tags:
+        - Sellers
+      summary: Delete seller
+      description: |
+        Deletes a seller only if all related orders are hard deleted.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Seller deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteSellerResponse'
+        "400":
+          description: Invalid sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Seller not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerNotFoundError'
+        "409":
+          description: Seller has existing orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteSellerConflictError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
   /v1/buyer/{buyerId}/order:
     post:
       tags:
@@ -1257,6 +1388,47 @@ components:
           type: string
           example: "Seller created successfully"
 
+    UpdateSellerRequest:
+      type: object
+      properties:
+        customer_assigned_account_id:
+          type: string
+          example: "CO001"
+        supplier_assigned_account_id:
+          type: string
+          example: "SUP-98765"
+        party_name:
+          type: string
+          example: "Updated Seller Pty Ltd"
+        address:
+          $ref: '#/components/schemas/Address'
+        tax_scheme:
+          $ref: '#/components/schemas/TaxScheme'
+        contact:
+          $ref: '#/components/schemas/Contact'
+
+    UpdateSellerResponse:
+      type: object
+      properties:
+        sellerId:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        message:
+          type: string
+          example: "Seller updated successfully"
+
+    DeleteSellerResponse:
+      type: object
+      properties:
+        sellerId:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        message:
+          type: string
+          example: "Seller deleted successfully"
+
     OrderRequest:
       type: object
       required:
@@ -1517,6 +1689,16 @@ components:
           type: string
           example: "Buyer not found"
 
+    SellerNotFoundError:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 404
+        error:
+          type: string
+          example: "Seller not found"
+
     ServerError:
       type: object
       properties:
@@ -1567,6 +1749,13 @@ components:
         error:
           type: string
           example: "Buyer cannot be deleted because related orders still exist. All related orders must be hard deleted first."
+
+    DeleteSellerConflictError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Seller cannot be deleted because related orders still exist. All related orders must be hard deleted first."
 
     CancelConflictError:
       type: object

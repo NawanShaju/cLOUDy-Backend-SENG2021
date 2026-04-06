@@ -1,6 +1,14 @@
 from flask import Blueprint, jsonify, request, Response
-from app.services.buyer_service import (create_buyer_service, update_buyer_service, delete_buyer_service)
-from app.services.seller_service import create_seller_service
+from app.services.buyer_service import (
+    create_buyer_service,
+    update_buyer_service,
+    delete_buyer_service
+)
+from app.services.seller_service import (
+    create_seller_service,
+    update_seller_service,
+    delete_seller_service
+)
 from app.services.db_services.seller_db import get_seller_by_id
 from app.services.db_services.buyer_db import get_buyer_by_id
 from .services.validate_order import validate_order, validate_order_xml
@@ -190,6 +198,47 @@ def create_seller():
             "sellerId": result["seller_id"],
             "message": "Seller created successfully"
         }), 201
+
+@api.route("/v1/seller/<sellerId>", methods=["PUT"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def update_seller(sellerId):
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Invalid Json Provided"}), 400
+
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+
+    with PostgresDB() as db:
+        result = update_seller_service(db, sellerId, data)
+
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+
+    return jsonify({
+        "sellerId": result["seller_id"],
+        "message": result["message"]
+    }), 200
+
+@api.route("/v1/seller/<sellerId>", methods=["DELETE"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def delete_seller(sellerId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+
+    with PostgresDB() as db:
+        result = delete_seller_service(db, sellerId)
+
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+
+    return jsonify({
+        "sellerId": result["seller_id"],
+        "message": result["message"]
+    }), 200
 
 @api.route("/v1/buyer/<buyerId>/order/<orderId>", methods=["PUT"])
 @validate_api_key
