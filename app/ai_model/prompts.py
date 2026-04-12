@@ -1,4 +1,3 @@
-from langchain_core.prompts import PromptTemplate
 from langchain_core.prompts import ChatPromptTemplate
 from .mode_schema import parser
 

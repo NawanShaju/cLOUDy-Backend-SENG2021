@@ -1,5 +1,4 @@
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
-from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
 from .mode_schema import OrderExtraction, parser
 from .prompts import prompt
