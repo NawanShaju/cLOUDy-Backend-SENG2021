@@ -9,20 +9,27 @@ load_dotenv()
 api_token = os.getenv("HUGGINGFACE_API_TOKEN")
 model = os.getenv("HUGGINGFACE_MODEL")
 
-endpoint = HuggingFaceEndpoint(
-    repo_id=model,
-    huggingfacehub_api_token=api_token,
-    temperature=0.01,
-    max_new_tokens=800,
-)
+_chain = None
 
-llm = ChatHuggingFace(llm=endpoint)
+def _get_chain():
+    global _chain
+    if _chain is None:
+        endpoint = HuggingFaceEndpoint(
+            repo_id=model,
+            huggingfacehub_api_token=api_token,
+            temperature=0.01,
+            max_new_tokens=800,
+        )
 
-chain = prompt | llm | parser
+        llm = ChatHuggingFace(llm=endpoint)
+        _chain = prompt | llm | parser
+        
+    return _chain
+
 
 def extract_order_data(text: str) -> dict:
     try:
-        result = chain.invoke({
+        result = _get_chain().invoke({
             "text": text
         })
 
