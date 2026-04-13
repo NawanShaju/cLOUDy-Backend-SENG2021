@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from langchain_core.output_parsers import PydanticOutputParser
+from typing import List
 
 class Address(BaseModel):
     street: str = ""
@@ -34,10 +35,15 @@ class Order(BaseModel):
     delivery_date: str = ""
     currency_code: str = ""
     address: Address = Address()
+    
+class ProductCandidate(BaseModel):
+    product_name: str = ""
+    quantity: str = ""
 
 class OrderExtraction(BaseModel):
     order: Order = Order()
     buyer: Buyer = Buyer()
+    products: List[ProductCandidate] = []
 
 
 parser = PydanticOutputParser(

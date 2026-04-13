@@ -36,7 +36,7 @@ from flask import send_from_directory
 from flask_swagger_ui import get_swaggerui_blueprint
 from app.utils.extensions import limiter
 from app.utils.helper import is_json
-from app.ai_model.model import extract_order_data
+from app.ai_model.model import extract_order_data, extract_order_with_products
 import os
 
 api = Blueprint("v1", __name__)
@@ -515,20 +515,16 @@ def delete_cancelled_orders(buyerId):
 @validate_api_key
 def extract_order():
     data = request.get_json()
-
-    if not data:
-        return jsonify({
-            "error": "No JSON body provided"
-        }), 400
-
     text = data.get("text")
+    seller_id = data.get("seller_id")
 
     if not text:
-        return jsonify({
-            "error": "Missing 'text' field"
-        }), 400
+        return jsonify({"error": "Missing text"}), 400
 
-    result = extract_order_data(text)
+    if not seller_id:
+        return jsonify({"error": "Missing sellerId"}), 400
+
+    result = extract_order_with_products(text, seller_id)
 
     return jsonify(result)
 
