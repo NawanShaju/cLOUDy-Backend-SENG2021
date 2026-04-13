@@ -14,14 +14,61 @@ CREATE TABLE clients (
 -- PRODUCTS TABLE
 -- =========================================
 CREATE TABLE products (
+    seller_id UUID,
     product_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_name VARCHAR(255),
     product_description TEXT,
     unit_price NUMERIC(12,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_product UNIQUE (product_name, product_description, unit_price)
+    CONSTRAINT fk_products_seller
+        FOREIGN KEY (seller_id) REFERENCES sellers(seller_id) ON DELETE SET NULL;
+
+    CONSTRAINT unique_product_per_seller UNIQUE (seller_id, product_name, product_description, unit_price)
 );
+
+-- =========================================
+-- Carts TABLE
+-- =========================================
+CREATE TABLE carts (
+    cart_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    seller_id       UUID NOT NULL,
+    currency_code   VARCHAR(10) DEFAULT 'AUD',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_carts_seller
+        FOREIGN KEY (seller_id) REFERENCES sellers(seller_id) ON DELETE CASCADE,
+
+    CONSTRAINT unique_cart_per_seller UNIQUE (seller_id)
+);
+
+
+-- =========================================
+-- Cart Items TABLE
+-- =========================================
+CREATE TABLE cart_items (
+    cart_item_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    cart_id         UUID NOT NULL,
+    product_id      UUID NOT NULL,
+    seller_id       UUID NOT NULL,
+    quantity        INTEGER NOT NULL CHECK (quantity > 0),
+    unit_price      NUMERIC(12,2) NOT NULL,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_cart_items_cart
+        FOREIGN KEY (cart_id) REFERENCES carts(cart_id) ON DELETE CASCADE,
+
+    CONSTRAINT fk_cart_items_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
+
+    CONSTRAINT fk_cart_items_seller
+        FOREIGN KEY (seller_id) REFERENCES sellers(seller_id) ON DELETE CASCADE,
+
+    CONSTRAINT unique_cart_product UNIQUE (cart_id, product_id)
+);
+
 
 -- =========================================
 -- ADDRESSES TABLE
@@ -202,3 +249,5 @@ CREATE INDEX idx_sellers_tax_scheme_id ON sellers(tax_scheme_id);
 CREATE INDEX idx_orders_seller_id ON orders(seller_id);
 CREATE INDEX idx_auth_api_key ON auth(api_key);
 CREATE INDEX idx_auth_buyer_id ON auth(buyer_id);
+CREATE INDEX idx_cart_items_cart_id ON cart_items(cart_id);
+CREATE INDEX idx_carts_seller_id ON carts(seller_id);
