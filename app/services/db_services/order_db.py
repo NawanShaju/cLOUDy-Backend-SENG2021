@@ -110,7 +110,30 @@ def insert_order_v2(db, data, buyerId, address_id):
     }
     return db.execute_insert_update_delete(query, params)
 
-def insert_product(db, items, seller_id):
+def insert_product(db, items):
+    query = """
+        INSERT INTO products (
+            product_name,
+            product_description,
+            unit_price
+        )
+        VALUES (
+            %(item_name)s,
+            %(item_description)s,
+            %(unit_price)s
+        )
+        ON CONFLICT (product_name, product_description, unit_price)
+        DO UPDATE SET
+            product_name = EXCLUDED.product_name
+        RETURNING product_id
+    """
+    product_map = {}
+    for item in items:
+        result = db.execute_insert_update_delete(query, item)
+        product_map[item["item_name"]] = result[0]
+    return product_map
+
+def insert_product_v2(db, items, seller_id):
     query = """
         INSERT INTO products (
             product_name,

@@ -26,6 +26,7 @@ from .db_services.order_db import (
     delete_order_documents,
     delete_order_items,
     delete_order,
+    insert_product_v2
 )
 from app.utils.helper import is_valid_uuid
 
@@ -126,7 +127,7 @@ def create_order_v2_service(db, data, buyerId):
             return {"error": "Seller not found"}, 404
 
     address_id = insert_address(db, data.get("address"))
-    product_map = insert_product(db, data.get("items"))
+    product_map = insert_product_v2(db, data.get("items"), seller_id)
     order_id = insert_order_v2(db, data, buyerId, address_id[0][0])
     insert_order_item(db, data.get("items"), order_id[0][0], product_map)
 
