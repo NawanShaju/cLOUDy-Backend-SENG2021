@@ -578,8 +578,13 @@ paths:
     post:
       tags:
         - Orders
-      summary: Create order (V1)
+      summary: Create order (V1) [DEPRECATED]
+      deprecated: true
       description: |
+        ⚠️ **DEPRECATED: This endpoint will be removed in a future release.**
+
+        Please use **POST /v2/buyer/{buyerId}/order** instead.
+
         Creates an order for a buyer and returns the generated UBL XML.
 
         **Note:** This V1 endpoint does not support registered buyer IDs or seller IDs.
