@@ -2,8 +2,9 @@ from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from dotenv import load_dotenv
 from .mode_schema import OrderExtraction, parser
 from .prompts import prompt
-from .product_matcher import match_products_with_quantity
+from .product_matcher import match_buyer, match_products_with_quantity
 from app.services.product_service import get_seller_products_internal
+from app.services.buyer_service import get_buyers_internal
 import os
 
 load_dotenv()
@@ -40,15 +41,25 @@ def extract_order_data(text: str) -> dict:
         print("Extraction error:", e)
         return OrderExtraction().model_dump()
     
-def extract_order_with_products(text: str, seller_id: str):
+def extract_order_full(text: str, seller_id: str, api_key: str):
     try:
         result = extract_order_data(text)
         extracted_products = result.get("products", [])
+        extracted_buyer = result.get("buyer", {})
 
         seller_products = get_seller_products_internal(seller_id)
         match_products = match_products_with_quantity(extracted_products, seller_products)
-        result["product_id"] = match_products
-        del result["products"]
+        result["product_id"] = match_products        
+        if "products" in result:
+            del result["products"]
+
+        buyers_list = get_buyers_internal(api_key)
+        matched_buyer_id = match_buyer(extracted_buyer, buyers_list)
+        if matched_buyer_id:
+            result["buyer_id"] = matched_buyer_id
+            
+            if "buyer" in result:
+                del result["buyer"]
 
         return result
 

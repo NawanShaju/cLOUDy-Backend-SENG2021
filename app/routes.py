@@ -36,7 +36,7 @@ from flask import send_from_directory
 from flask_swagger_ui import get_swaggerui_blueprint
 from app.utils.extensions import limiter
 from app.utils.helper import is_json
-from app.ai_model.model import extract_order_data, extract_order_with_products
+from app.ai_model.model import extract_order_full
 import os
 
 api = Blueprint("v1", __name__)
@@ -517,6 +517,7 @@ def extract_order():
     data = request.get_json()
     text = data.get("text")
     seller_id = data.get("seller_id")
+    api_key = request.headers.get("api-key")
 
     if not text:
         return jsonify({"error": "Missing text"}), 400
@@ -524,7 +525,7 @@ def extract_order():
     if not seller_id:
         return jsonify({"error": "Missing sellerId"}), 400
 
-    result = extract_order_with_products(text, seller_id)
+    result = extract_order_full(text, seller_id, api_key)
 
     return jsonify(result)
 
