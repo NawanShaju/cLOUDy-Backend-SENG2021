@@ -61,6 +61,7 @@ def mock_auth_db(monkeypatch):
 @pytest.fixture
 def valid_order():
     return {
+        "seller_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
         "order_date": "2024-01-15",
         "delivery_date": "2024-01-20",
         "currency_code": "USD",

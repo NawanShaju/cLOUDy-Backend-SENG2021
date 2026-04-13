@@ -133,6 +133,32 @@ def insert_product(db, items):
         product_map[item["item_name"]] = result[0]
     return product_map
 
+def insert_product_v2(db, items, seller_id):
+    query = """
+        INSERT INTO products (
+            product_name,
+            product_description,
+            unit_price,
+            seller_id
+        )
+        VALUES (
+            %(item_name)s,
+            %(item_description)s,
+            %(unit_price)s,
+            %(seller_id)s
+        )
+        ON CONFLICT (product_name, product_description, unit_price, seller_id)
+        DO UPDATE SET
+            product_name = EXCLUDED.product_name
+        RETURNING product_id
+    """
+    product_map = {}
+    for item in items:
+        item["seller_id"] = seller_id
+        result = db.execute_insert_update_delete(query, item)
+        product_map[item["item_name"]] = result[0]
+    return product_map
+
 def insert_address(db, address):
     query = """
         INSERT INTO addresses (
