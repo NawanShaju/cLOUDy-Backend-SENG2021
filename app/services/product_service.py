@@ -7,6 +7,7 @@ from app.services.db_services.product_db import (
     product_has_order_items,
 )
 from app.services.db_services.seller_db import get_seller_by_id
+from database.PostgresDB import PostgresDB
 
 
 def create_product_service(db, seller_id, data):
@@ -104,3 +105,10 @@ def get_product_by_id_service(db, product_id):
         "createdAt":          row[5].isoformat() if row[5] else None,
         "updatedAt":          row[6].isoformat() if row[6] else None,
     }
+    
+def get_seller_products_internal(seller_id):
+    with PostgresDB() as db:
+        return get_products_for_seller_service(
+            db,
+            seller_id
+        )

@@ -34,6 +34,16 @@ TAX RULES:
 - "scheme", "schemeID" → scheme_id
 - "taxcode", "tax type", "tax code" → tax_type_code
 
+PRODUCT EXTRACTION RULES:
+- Extract ALL products mentioned
+- There can be multiple products
+- Use context to identify product
+- Extract product_name and quantity
+- Quantity is usually a number before the product or a meaning 1
+- Products must be returned inside: "products": []
+- If quantity missing → use "1".
+- If anything missing → leave empty "".
+
 GENERAL RULES:
 - Ignore irrelevant sentences (shipping preferences, notes, complaints)
 - If a field cannot be found in the text, use empty string ""
