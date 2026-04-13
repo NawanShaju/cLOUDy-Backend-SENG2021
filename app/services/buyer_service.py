@@ -1,5 +1,6 @@
 from .db_services.buyer_db import (
     buyer_has_existing_orders,
+    get_buyers_by_api_key,
     insert_tax_scheme,
     insert_buyer,
     find_buyer_by_account_id,
@@ -9,7 +10,7 @@ from .db_services.buyer_db import (
     validate_buyer_ownership,
     delete_buyer
 )
-
+from database.PostgresDB import PostgresDB
 from .db_services.order_db import insert_address
 
 def create_buyer_service(db, data, api_key):
@@ -92,3 +93,25 @@ def delete_buyer_service(db, buyer_id, api_key):
         "buyer_id": str(buyer_id),
         "message": "Buyer deleted successfully"
     }, 200
+    
+def get_buyers_internal(api_key):
+
+    with PostgresDB() as db:
+        buyers = get_buyers_by_api_key(
+            db,
+            api_key
+        )
+
+    if not buyers:
+        return []
+
+    return [
+        {
+            "buyerId": str(row[0]),
+            "party_name": row[1],
+            "customer_assigned_account_id": row[2],
+            "contact_name": row[3],
+            "contact_email": row[4]
+        }
+        for row in buyers
+    ]
