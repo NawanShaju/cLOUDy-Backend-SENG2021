@@ -22,7 +22,7 @@ info:
     `api-key: YOUR_API_KEY`
 
 servers:
-  - url: http://cLOUDy-373805882.us-east-1.elb.amazonaws.com/api
+  - url: http://cloudy-1831309437.us-east-1.elb.amazonaws.com/api
     description: Production Server
   - url: http://0.0.0.0:5001/api
     description: Local Server
@@ -184,7 +184,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerError'
-
+  /v1/buyers:
     get:
       tags:
         - Buyers
@@ -416,7 +416,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerError'
-
+  /v1/sellers:
     get:
       tags:
         - Sellers
