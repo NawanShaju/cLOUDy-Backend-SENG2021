@@ -94,6 +94,7 @@ def delete_buyer_service(db, buyer_id, api_key):
         "message": "Buyer deleted successfully"
     }, 200
     
+# CHANGE ONCE AKSHAT IS DONE
 def get_buyers_internal(api_key):
 
     with PostgresDB() as db:
