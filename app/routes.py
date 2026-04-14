@@ -517,7 +517,9 @@ def extract_order():
     data = request.get_json()
     text = data.get("text")
     seller_id = data.get("seller_id")
-    api_key = request.headers.get("api-key")
+    
+    # CHANGE ONCE AKSHAT IS DONE
+    api_key = data.get("api_key")
 
     if not text:
         return jsonify({"error": "Missing text"}), 400
