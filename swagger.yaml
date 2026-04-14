@@ -59,6 +59,14 @@ tags:
       a registered seller (created via **POST /v1/seller**). When provided, the
       seller's full details are embedded in the UBL XML `SellerSupplierParty` block.
       When omitted, the `supplier` field in the request body is used as a plain name fallback.
+  - name: Products
+    description: Operations for managing seller product catalogues
+  - name: Cart
+    description: |
+      Shopping cart operations for sellers.
+
+      Sellers can manage a cart of products and check out to automatically
+      generate a UBL order for a registered buyer.
   - name: Utility
     description: Methods for extra functonality
 
@@ -1082,6 +1090,554 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
+  /v2/seller/{sellerId}/products:
+    get:
+      tags:
+        - Products
+      summary: Get all products for a seller
+      description: Returns all products registered under the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of products for the seller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerProductsResponse'
+        "400":
+          description: Invalid sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/product:
+    post:
+      tags:
+        - Products
+      summary: Create product
+      description: Creates a new product under the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+            example:
+              item_name: "Widget A"
+              item_description: "An industrial-grade widget"
+              unit_price: 49.99
+              unit_code: "EA"
+      responses:
+        "201":
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateProductResponse'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/product/{productId}:
+    put:
+      tags:
+        - Products
+      summary: Update product
+      description: Updates an existing product belonging to the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+            example:
+              item_name: "Updated Widget"
+              unit_price: 59.99
+      responses:
+        "200":
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateProductResponse'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      description: Deletes a product belonging to the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteProductResponse'
+        "400":
+          description: Invalid sellerId or productId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/product/{productId}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      description: Returns a single product by its UUID.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        "400":
+          description: Invalid productId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/cart:
+    get:
+      tags:
+        - Cart
+      summary: Get cart
+      description: Returns the current cart contents for the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        "400":
+          description: Invalid sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    delete:
+      tags:
+        - Cart
+      summary: Clear cart
+      description: Removes all items from the seller's cart.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Cart cleared successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClearCartResponse'
+        "400":
+          description: Invalid sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/cart/item:
+    post:
+      tags:
+        - Cart
+      summary: Add item to cart
+      description: |
+        Adds a product to the seller's cart.
+
+        Supply either a registered `product_id` (UUID) to pull details from the product
+        catalogue, or provide item fields inline (`item_name`, `unit_price`, etc.).
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddToCartRequest'
+            example:
+              product_id: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+              quantity: 3
+      responses:
+        "200":
+          description: Item added to cart successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/cart/item/{productId}:
+    put:
+      tags:
+        - Cart
+      summary: Update cart item
+      description: Updates the quantity or details of a specific item in the seller's cart.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCartItemRequest'
+            example:
+              quantity: 5
+      responses:
+        "200":
+          description: Cart item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Item not found in cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    delete:
+      tags:
+        - Cart
+      summary: Remove item from cart
+      description: Removes a specific product from the seller's cart.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Item removed from cart successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        "400":
+          description: Invalid sellerId or productId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Item not found in cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/cart/checkout:
+    post:
+      tags:
+        - Cart
+      summary: Checkout cart
+      description: |
+        Converts the seller's current cart into a UBL order for the specified buyer.
+
+        The `buyer_id` in the request body must be a UUID of a buyer registered via
+        **POST /v1/buyer**. On success the cart is cleared and enriched UBL XML is returned.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+            example:
+              buyer_id: "3f7a2c1e-4b5d-4e6f-9a8b-1c2d3e4f5a6b"
+              delivery_date: "2026-05-01"
+              currency_code: "AUD"
+              address:
+                street: "436 George St"
+                city: "Sydney"
+                state: "NSW"
+                postal_code: "2000"
+                country_code: "AU"
+      responses:
+        "200":
+          description: Checkout successful — returns enriched UBL XML
+          content:
+            application/xml:
+              schema:
+                type: string
+                example: "<Order>...</Order>"
+        "400":
+          description: Invalid request — missing buyer_id, empty cart, or bad UUIDs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Seller or buyer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
   /v1/validate-xml:
     post:
       tags:
@@ -1663,6 +2219,221 @@ components:
         message:
           type: string
           example: "All canceled orders deleted successfully"
+
+    CreateProductRequest:
+      type: object
+      required:
+        - item_name
+        - unit_price
+      properties:
+        item_name:
+          type: string
+          example: "Widget A"
+        item_description:
+          type: string
+          example: "An industrial-grade widget"
+        unit_price:
+          type: number
+          example: 49.99
+        unit_code:
+          type: string
+          example: "EA"
+          description: Unit of measure code (defaults to EA if omitted)
+
+    CreateProductResponse:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+          example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+        message:
+          type: string
+          example: "Product created successfully"
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        item_name:
+          type: string
+          example: "Updated Widget"
+        item_description:
+          type: string
+          example: "Updated description"
+        unit_price:
+          type: number
+          example: 59.99
+        unit_code:
+          type: string
+          example: "EA"
+
+    UpdateProductResponse:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+          example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+        message:
+          type: string
+          example: "Product updated successfully"
+
+    DeleteProductResponse:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+          example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+        message:
+          type: string
+          example: "Product deleted successfully"
+
+    ProductResponse:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+        seller_id:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        item_name:
+          type: string
+          example: "Widget A"
+        item_description:
+          type: string
+          example: "An industrial-grade widget"
+        unit_price:
+          type: number
+          example: 49.99
+        unit_code:
+          type: string
+          example: "EA"
+
+    SellerProductsResponse:
+      type: object
+      properties:
+        sellerId:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        count:
+          type: integer
+          example: 3
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductResponse'
+
+    CartItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+        item_name:
+          type: string
+          example: "Widget A"
+        item_description:
+          type: string
+          example: "An industrial-grade widget"
+        unit_price:
+          type: number
+          example: 49.99
+        quantity:
+          type: integer
+          example: 2
+        unit_code:
+          type: string
+          example: "EA"
+
+    CartResponse:
+      type: object
+      properties:
+        sellerId:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        total:
+          type: number
+          example: 99.98
+
+    ClearCartResponse:
+      type: object
+      properties:
+        sellerId:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        message:
+          type: string
+          example: "Cart cleared successfully"
+
+    AddToCartRequest:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+          description: UUID of a registered product. When provided, item details are pulled from the catalogue.
+        item_name:
+          type: string
+          example: "Widget A"
+          description: Required if product_id is not provided
+        item_description:
+          type: string
+          example: "An industrial-grade widget"
+        unit_price:
+          type: number
+          example: 49.99
+          description: Required if product_id is not provided
+        quantity:
+          type: integer
+          example: 2
+        unit_code:
+          type: string
+          example: "EA"
+
+    UpdateCartItemRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          example: 5
+        unit_price:
+          type: number
+          example: 44.99
+
+    CheckoutRequest:
+      type: object
+      required:
+        - buyer_id
+      properties:
+        buyer_id:
+          type: string
+          format: uuid
+          example: "3f7a2c1e-4b5d-4e6f-9a8b-1c2d3e4f5a6b"
+          description: UUID of a registered buyer (created via POST /v1/buyer)
+        delivery_date:
+          type: string
+          format: date
+          example: "2026-05-01"
+        currency_code:
+          type: string
+          example: "AUD"
+        address:
+          $ref: '#/components/schemas/Address'
 
     BadRequestError:
       type: object
