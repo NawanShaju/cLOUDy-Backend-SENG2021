@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e . && pip install gunicorn
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -e .
 
 COPY . .
 

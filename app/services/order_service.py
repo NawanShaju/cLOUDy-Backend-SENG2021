@@ -7,8 +7,8 @@ from .db_services.order_db import (
     get_full_order,
     get_order_details,
     insert_address,
-    insert_order_v2,
     insert_product,
+    insert_order_v2,
     insert_order,
     insert_order_item,
     get_existing_address_by_order,
@@ -25,8 +25,7 @@ from .db_services.order_db import (
     get_orders_for_buyer,
     delete_order_documents,
     delete_order_items,
-    delete_order,
-    insert_product_v2
+    delete_order
 )
 from app.utils.helper import is_valid_uuid
 
@@ -102,7 +101,7 @@ def create_order_service(db, data, buyerId, api_key):
         return jsonify({"error": "Invalid Json Provided"}), 400
 
     address_id = insert_address(db, data.get("address"))
-    product_map = insert_product(db, data.get("items"))
+    product_map = insert_product(db, data.get("items"), seller_id=None)
     order_id = insert_order(db, data, buyerId, address_id[0][0])
     insert_order_item(db, data.get("items"), order_id[0][0], product_map)
 
@@ -127,7 +126,7 @@ def create_order_v2_service(db, data, buyerId):
             return {"error": "Seller not found"}, 404
 
     address_id = insert_address(db, data.get("address"))
-    product_map = insert_product_v2(db, data.get("items"), seller_id)
+    product_map = insert_product(db, data.get("items"), seller_id)
     order_id = insert_order_v2(db, data, buyerId, address_id[0][0])
     insert_order_item(db, data.get("items"), order_id[0][0], product_map)
 

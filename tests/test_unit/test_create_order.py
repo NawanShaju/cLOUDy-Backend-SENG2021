@@ -84,7 +84,8 @@ def test_insert_address_returns_address_id(mock_db):
 def test_insert_product_returns_product_map(mock_db):
     mock_db.execute_insert_update_delete.return_value = [(101,)]
     items = [{"item_name": "Widget A", "item_description": "A widget", "unit_price": 10.00}]
-    result = insert_product(mock_db, items)
+    seller_id = "e8b12a38-feba-40e3-9245-1496f7f0794d"
+    result = insert_product(mock_db, items, seller_id)
     assert result == {"Widget A": (101, )}
 
 
@@ -94,7 +95,8 @@ def test_insert_product_calls_db_once_per_item(mock_db):
         {"item_name": "Widget A", "item_description": "A widget", "unit_price": 10.00},
         {"item_name": "Widget B", "item_description": "B widget", "unit_price": 5.00}
     ]
-    insert_product(mock_db, items)
+    seller_id = "e8b12a38-feba-40e3-9245-1496f7f0794d"
+    insert_product(mock_db, items, seller_id)
     assert mock_db.execute_insert_update_delete.call_count == 2
 
 
@@ -204,7 +206,7 @@ def test_create_order_v2_returns_order_id_and_buyer_data(monkeypatch, mock_db, v
     }
     monkeypatch.setattr("app.services.order_service.get_buyer_by_id", lambda db, b: fake_buyer)
     monkeypatch.setattr("app.services.order_service.insert_address", lambda db, a: [("addr-id",)])
-    monkeypatch.setattr("app.services.order_service.insert_product", lambda db, i: {"Widget A": 101})
+    monkeypatch.setattr("app.services.order_service.insert_product", lambda db, i, seller_id: {"Widget A": 101})
     monkeypatch.setattr("app.services.order_service.insert_order_v2", lambda db, d, b, a: [("order-999",)])
     monkeypatch.setattr("app.services.order_service.insert_order_item", lambda db, i, o, p: None)
  
