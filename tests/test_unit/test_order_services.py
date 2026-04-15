@@ -101,7 +101,7 @@ def test_create_order_v2_returns_order_id_and_buyer_data(monkeypatch, mock_db, v
                   "supplier_assigned_account_id": None}
     monkeypatch.setattr("app.services.order_service.get_buyer_by_id", lambda db, b: fake_buyer)
     monkeypatch.setattr("app.services.order_service.insert_address", lambda db, a: [("addr-id",)])
-    monkeypatch.setattr("app.services.order_service.insert_product", lambda db, i: {"Widget A": 101})
+    monkeypatch.setattr("app.services.order_service.insert_product", lambda db, i, seller_id: {"Widget A": 101})
     monkeypatch.setattr("app.services.order_service.insert_order_v2", lambda db, d, b, a: [("order-999",)])
     monkeypatch.setattr("app.services.order_service.insert_order_item", lambda db, i, o, p: None)
 
@@ -119,7 +119,7 @@ def test_create_order_v2_inserts_order_item(monkeypatch, mock_db, valid_order_da
                   "customer_assigned_account_id": None, "supplier_assigned_account_id": None}
     monkeypatch.setattr("app.services.order_service.get_buyer_by_id", lambda db, b: fake_buyer)
     monkeypatch.setattr("app.services.order_service.insert_address", lambda db, a: [("addr-id",)])
-    monkeypatch.setattr("app.services.order_service.insert_product", lambda db, i: {"Widget A": 101})
+    monkeypatch.setattr("app.services.order_service.insert_product", lambda db, i, seller_id: {"Widget A": 101})
     monkeypatch.setattr("app.services.order_service.insert_order_v2", lambda db, d, b, a: [("order-1",)])
     monkeypatch.setattr(
         "app.services.order_service.insert_order_item",

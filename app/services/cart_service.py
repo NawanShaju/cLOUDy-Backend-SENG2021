@@ -13,7 +13,7 @@ from app.services.db_services.seller_db import get_seller_by_id
 from app.services.db_services.buyer_db import get_buyer_by_id
 from app.services.db_services.order_db import (
     insert_address,
-    insert_product_v2,
+    insert_product,
     insert_order_v2,
     insert_order_item,
 )
@@ -251,7 +251,7 @@ def checkout_service(db, seller_id, buyer_id, data, api_key):
         }
 
         address_id = insert_address(db, order_data["address"])
-        product_map = insert_product_v2(db, order_data["items"], seller_id)
+        product_map = insert_product(db, order_data["items"], seller_id)
         order_id = insert_order_v2(db, order_data, buyer_id, address_id[0][0])
         insert_order_item(db, order_data["items"], order_id[0][0], product_map)
         insert_auth(db, api_key, buyer_id)
