@@ -39,6 +39,16 @@ def _build_address_element(parent_el, address_data):
         country = etree.SubElement(parent_el, cac("Country"))
         etree.SubElement(country, cbc("IdentificationCode")).text = address_data["country_code"]
         
+def _format_datetime_to_hour(dt_str):
+    if not dt_str:
+        return ""
+
+    try:
+        dt = datetime.fromisoformat(dt_str)
+        return dt.date().isoformat()
+    except ValueError:
+        return dt_str.split("T")[0]
+        
 def _build_tax_scheme(parent, tax):
     """Append a PartyTaxScheme block onto parent."""
     party_tax = etree.SubElement(parent, cac("PartyTaxScheme"))
@@ -73,9 +83,12 @@ def generate_xml(data, orderId, buyerId):
     etree.SubElement(root, cbc("UBLVersionID")).text = "2.1"
     etree.SubElement(root, cbc("ID")).text = orderId
     etree.SubElement(root, cbc("UUID")).text = str(uuid.uuid4())
-    etree.SubElement(root, cbc("IssueDate")).text = data.get(
-        "order_date", datetime.now(timezone.utc).date().isoformat()
-    )
+    etree.SubElement(root, cbc("IssueDate")).text = _format_datetime_to_hour(
+                                                    data.get(
+                                                        "order_date",
+                                                        datetime.now(timezone.utc).isoformat()
+                                                    )
+                                                )
     etree.SubElement(root, cbc("DocumentCurrencyCode")).text = data.get(
         "currency_code", "AUD"
     )
@@ -94,7 +107,7 @@ def generate_xml(data, orderId, buyerId):
     seller_party = etree.SubElement(root, cac("SellerSupplierParty"))
     seller_party_inner = etree.SubElement(seller_party, cac("Party"))
     seller_name_el = etree.SubElement(seller_party_inner, cac("PartyName"))
-    etree.SubElement(seller_name_el, cbc("Name")).text = data.get("supplier", "")
+    etree.SubElement(seller_name_el, cbc("Name")).text = data.get("supplier", "No part Name")
  
     delivery_date_str = data.get("delivery_date", "")
     if delivery_date_str:
@@ -105,13 +118,12 @@ def generate_xml(data, orderId, buyerId):
             _build_address_element(delivery_address, address_data)
 
         requested = etree.SubElement(delivery, cac("RequestedDeliveryPeriod"))
-        if data.get("delivery_start_date"):
-            etree.SubElement(requested, cbc("StartDate")).text = data["delivery_start_date"]
-        if data.get("delivery_start_time"):
-            etree.SubElement(requested, cbc("StartTime")).text = data["delivery_start_time"]
-        etree.SubElement(requested, cbc("EndDate")).text = delivery_date_str
-        if data.get("delivery_end_time"):
-            etree.SubElement(requested, cbc("EndTime")).text = data["delivery_end_time"]
+        if data.get("order_date"):
+            etree.SubElement(requested, cbc("StartDate")).text = \
+                _format_datetime_to_hour(data["order_date"])
+            
+        etree.SubElement(requested, cbc("EndDate")).text = \
+            _format_datetime_to_hour(delivery_date_str)
  
     currency_code = data.get("currency_code", "AUD")
     items_data = data.get("items", [])
@@ -178,9 +190,12 @@ def generate_xml_v2(data, orderId, buyerId, buyer_data, seller_data=None):
     etree.SubElement(root, cbc("UBLVersionID")).text = "2.1"
     etree.SubElement(root, cbc("ID")).text = orderId
     etree.SubElement(root, cbc("UUID")).text = str(uuid.uuid4())
-    etree.SubElement(root, cbc("IssueDate")).text = data.get(
-        "order_date", datetime.now(timezone.utc).date().isoformat()
-    )
+    etree.SubElement(root, cbc("IssueDate")).text = _format_datetime_to_hour(
+                                                        data.get(
+                                                            "order_date",
+                                                            datetime.now(timezone.utc).isoformat()
+                                                        )
+                                                    )
     etree.SubElement(root, cbc("DocumentCurrencyCode")).text = data.get("currency_code", "AUD")
 
     buyer_party = etree.SubElement(root, cac("BuyerCustomerParty"))
@@ -255,9 +270,11 @@ def generate_xml_v2(data, orderId, buyerId, buyer_data, seller_data=None):
 
         requested = etree.SubElement(delivery, cac("RequestedDeliveryPeriod"))
         if data.get("order_date"):
-            etree.SubElement(requested, cbc("StartDate")).text = data["order_date"]
+            etree.SubElement(requested, cbc("StartDate")).text = \
+                _format_datetime_to_hour(data["order_date"])
             
-        etree.SubElement(requested, cbc("EndDate")).text = delivery_date_str
+        etree.SubElement(requested, cbc("EndDate")).text = \
+            _format_datetime_to_hour(delivery_date_str)
 
     currency_code = data.get("currency_code", "AUD")
     items_data = data.get("items", [])
