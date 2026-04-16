@@ -22,6 +22,12 @@ from app.services.cart_service import (
     clear_cart_service,
     checkout_service,
 )
+from app.services.inventory_service import (
+    create_inventory_service,
+    update_inventory_service,
+    delete_inventory_service,
+    get_inventory_service,
+)
 
 api = Blueprint("v2", __name__)
 
@@ -218,13 +224,19 @@ def get_seller_products(sellerId):
     if not is_valid_uuid(sellerId):
         return jsonify({"error": "sellerId must be a valid UUID"}), 400
 
+    product_type = request.args.get("type")
+
+    if product_type and product_type not in ["catalogue", "inventory"]:
+        return jsonify({"error": "Invalid product type"}), 400
+
     with PostgresDB() as db:
-        result = get_products_for_seller_service(db, sellerId)
+        result = get_products_for_seller_service(db, sellerId, product_type)
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
 
     return jsonify({
         "sellerId": sellerId,
+        "type":     product_type,
         "count":    len(result),
         "products": result
     }), 200
@@ -287,4 +299,78 @@ def create_order_v2(buyerId):
         xml_to_db(db, xml_string, order_id)
  
         return Response(xml_string, mimetype="application/xml", status=200)
- 
+
+@api.route("/v2/seller/<sellerId>/inventory", methods=["GET"])
+@validate_api_key
+@limiter.limit("60 per minute")
+def get_inventory(sellerId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+    
+    with PostgresDB() as db:
+        result = get_inventory_service(db, sellerId)
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+    
+    return jsonify(result), 200
+
+
+@api.route("/v2/seller/<sellerId>/inventory", methods=["POST"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def create_inventory_item(sellerId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+    
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({"error": "Invalid JSON provided"}), 400
+    
+    with PostgresDB() as db:
+        result = create_inventory_service(db, sellerId, data)
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+    
+    return jsonify(result), 201
+
+
+@api.route("/v2/seller/<sellerId>/inventory/<inventoryId>", methods=["PUT"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def update_inventory_item_route(sellerId, inventoryId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+    
+    if not is_valid_uuid(inventoryId):
+        return jsonify({"error": "inventoryId must be a valid UUID"}), 400
+    
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({"error": "Invalid JSON provided"}), 400
+    
+    with PostgresDB() as db:
+        result = update_inventory_service(db, sellerId, inventoryId, data)
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+    
+    return jsonify(result), 200
+
+
+@api.route("/v2/seller/<sellerId>/inventory/<inventoryId>", methods=["DELETE"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def delete_inventory_item_route(sellerId, inventoryId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+    
+    if not is_valid_uuid(inventoryId):
+        return jsonify({"error": "inventoryId must be a valid UUID"}), 400
+    
+    with PostgresDB() as db:
+        result = delete_inventory_service(db, sellerId, inventoryId)
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+    
+    return jsonify(result), 200
