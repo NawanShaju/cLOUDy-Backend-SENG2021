@@ -21,14 +21,9 @@ from app.services.db_services.buyer_db import insert_auth
 from app.utils.xml_generation import generate_xml_v2
 from app.services.db_services.xml_db import xml_to_db
 from datetime import datetime, timezone
-
+from app.services.db_services.inventory_db import get_inventory_items_for_product
 
 def _format_cart(cart_row, items):
-    """
-    cart_row[0] = cart_id
-    cart_row[1] = seller_id   ← was buyer_id before
-    cart_row[2] = currency_code
-    """
     seller_groups = {}
     grand_total   = 0
 
@@ -47,15 +42,15 @@ def _format_cart(cart_row, items):
             }
 
         seller_groups[seller_id]["items"].append({
-            "cartItemId":         str(item[0]),
-            "productId":          str(item[1]),
-            "productName":        item[2],
+            "cartItemId": str(item[0]),
+            "productId": str(item[1]),
+            "productName": item[2],
             "productDescription": item[3],
-            "unitPrice":          str(item[4]),
-            "quantity":           item[5],
-            "lineTotal":          str(round(line_total, 2)),
-            "addedAt":            item[9].isoformat() if item[9] else None,
-            "updatedAt":          item[10].isoformat() if item[10] else None,
+            "unitPrice": str(item[4]),
+            "quantity": item[5],
+            "lineTotal": str(round(line_total, 2)),
+            "addedAt": item[9].isoformat() if item[9] else None,
+            "updatedAt": item[10].isoformat() if item[10] else None,
         })
         seller_groups[seller_id]["subtotal"] += line_total
 
@@ -63,12 +58,12 @@ def _format_cart(cart_row, items):
         s["subtotal"] = str(round(s["subtotal"], 2))
 
     return {
-        "cartId":       str(cart_row[0]),
-        "sellerId":     str(cart_row[1]),   # ← was buyerId
+        "cartId": str(cart_row[0]),
+        "sellerId": str(cart_row[1]),
         "currencyCode": cart_row[2],
-        "grandTotal":   str(round(grand_total, 2)),
-        "itemCount":    len(items),
-        "sellers":      list(seller_groups.values()),
+        "grandTotal": str(round(grand_total, 2)),
+        "itemCount": len(items),
+        "sellers": list(seller_groups.values()),
     }
 
 
@@ -86,7 +81,6 @@ def get_cart_service(db, seller_id):
     items = get_cart_items(db, cart[0])
     return _format_cart(cart, items or [])
 
-
 def add_to_cart_service(db, seller_id, data):
     if not data.get("product_id"):
         return {"error": "product_id is required"}, 400
@@ -99,20 +93,37 @@ def add_to_cart_service(db, seller_id, data):
     if not product:
         return {"error": "Product not found"}, 404
 
-    product_id       = str(product[0])
+    product_id = str(product[0])
     product_seller_id = str(product[4])
-    unit_price       = float(product[3])
+    unit_price = float(product[3])
 
     if not product_seller_id:
         return {"error": "Product is not associated with a seller"}, 400
 
-    # Cart is keyed to the seller of the product being added
-    cart    = get_or_create_cart(db, product_seller_id)
+    inv_items = get_inventory_items_for_product(db, product_id)
+    if inv_items:
+        insufficient = []
+        for inv in inv_items:
+            required = inv[1] * quantity 
+            available = inv[5]
+            if available < required:
+                insufficient.append({
+                    "itemName":  inv[2],
+                    "required":  required,
+                    "available": available,
+                })
+        if insufficient:
+            return {
+                "error": "Insufficient inventory for one or more required items",
+                "items": insufficient,
+            }, 409
+
+    cart = get_or_create_cart(db, product_seller_id)
     cart_id = cart[0][0]
 
     add_cart_item(db, cart_id, product_id, product_seller_id, quantity, unit_price)
 
-    items    = get_cart_items(db, cart_id)
+    items  = get_cart_items(db, cart_id)
     cart_row = get_cart_by_seller(db, product_seller_id)
     return _format_cart(cart_row, items or [])
 
@@ -164,10 +175,6 @@ def clear_cart_service(db, seller_id):
 
 
 def checkout_service(db, seller_id, buyer_id, data, api_key):
-    """
-    seller_id  — whose cart we're checking out
-    buyer_id   — who is placing the order (selected at checkout time)
-    """
     if not data.get("address"):
         return {"error": "address is required for checkout"}, 400
 
@@ -177,7 +184,6 @@ def checkout_service(db, seller_id, buyer_id, data, api_key):
 
     if not data.get("delivery_date"):
         return {"error": "delivery_date is required for checkout"}, 400
-
     if not data.get("currency_code"):
         return {"error": "currency_code is required for checkout"}, 400
 
@@ -187,38 +193,58 @@ def checkout_service(db, seller_id, buyer_id, data, api_key):
 
     cart_id = cart[0]
     items   = get_cart_items(db, cart_id)
-
     if not items:
         return {"error": "Cart is empty"}, 400
 
-    # Fetch buyer once — needed for XML generation
     buyer_data = get_buyer_by_id(db, buyer_id)
     if not buyer_data:
         return {"error": "Buyer not found"}, 404
 
-    # Price staleness check
     price_changes = []
     for item in items:
-        product    = get_product_by_id_db(db, str(item[1]))
+        product = get_product_by_id_db(db, str(item[1]))
         current_px = float(product[3])
-        cart_px    = float(item[4])
+        cart_px = float(item[4])
         if current_px != cart_px:
             price_changes.append({
-                "productId":    str(item[1]),
-                "productName":  item[2],
-                "cartPrice":    str(cart_px),
+                "productId": str(item[1]),
+                "productName": item[2],
+                "cartPrice": str(cart_px),
                 "currentPrice": str(current_px),
             })
-
     if price_changes:
         return {
-            "error":        "Some prices have changed since items were added to your cart",
+            "error": "Some prices have changed since items were added to your cart",
             "priceChanges": price_changes,
-            "message":      "Please review and update your cart before checking out"
+            "message": "Please review and update your cart before checking out",
         }, 409
 
-    # Group items by seller (in this model there's one seller per cart,
-    # but keeping the loop preserves flexibility)
+    inventory_demand = {}
+    for item in items:
+        cart_qty  = item[5]
+        inv_items = get_inventory_items_for_product(db, str(item[1]))
+        for inv in (inv_items or []):
+            inv_id    = str(inv[0])
+            required  = inv[1] * cart_qty
+            if inv_id not in inventory_demand:
+                inventory_demand[inv_id] = {
+                    "itemName":  inv[2],
+                    "required":  0,
+                    "available": inv[5],
+                }
+            inventory_demand[inv_id]["required"] += required
+
+    insufficient = [
+        {"itemName": v["itemName"], "required": v["required"], "available": v["available"]}
+        for v in inventory_demand.values()
+        if v["available"] < v["required"]
+    ]
+    if insufficient:
+        return {
+            "error": "Insufficient inventory for one or more items",
+            "items": insufficient,
+        }, 409
+
     seller_groups = {}
     for item in items:
         sid = str(item[7])
@@ -226,7 +252,7 @@ def checkout_service(db, seller_id, buyer_id, data, api_key):
             seller_groups[sid] = []
         seller_groups[sid].append(item)
 
-    today          = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now(timezone.utc).date().isoformat()
     created_orders = []
 
     for order_seller_id, seller_items in seller_groups.items():
@@ -250,7 +276,7 @@ def checkout_service(db, seller_id, buyer_id, data, api_key):
             ],
         }
 
-        address_id = insert_address(db, order_data["address"])
+        address_id  = insert_address(db, order_data["address"])
         product_map = insert_product(db, order_data["items"], seller_id)
         order_id = insert_order_v2(db, order_data, buyer_id, address_id[0][0])
         insert_order_item(db, order_data["items"], order_id[0][0], product_map)
@@ -260,17 +286,21 @@ def checkout_service(db, seller_id, buyer_id, data, api_key):
             order_data, order_id[0][0], buyer_id, buyer_data, seller_data
         )
         xml_to_db(db, xml_string, order_id[0][0])
-
         created_orders.append({
             "orderId":   str(order_id[0][0]),
             "sellerId":  order_seller_id,
             "itemCount": len(seller_items),
         })
 
+    for inv_id, demand in inventory_demand.items():
+        db.execute_insert_update_delete("""
+            UPDATE inventory
+            SET quantity = quantity - %(required)s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE inventory_id = %(inventory_id)s
+        """, {"inventory_id": inv_id, "required": demand["required"]})
+
     clear_cart(db, cart_id)
     delete_cart(db, seller_id)
 
-    return {
-        "message": "Checkout successful",
-        "orders":  created_orders,
-    }
+    return {"message": "Checkout successful", "orders": created_orders}

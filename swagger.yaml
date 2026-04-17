@@ -57,13 +57,14 @@ tags:
 
       Optionally, a `seller_id` field can be included in the request body to link
       a registered seller (created via **POST /v1/seller**). When provided, the
-      seller's full details are embedded in the UBL XML `SellerSupplierParty` block.
-      When omitted, the `supplier` field in the request body is used as a plain name fallback.
+      seller's full details are embedded in the UBL XML 
+      
+      `SellerSupplierParty` block. When omitted, the `supplier` field in the request body is used as a plain name fallback.
   - name: Products
     description: Operations for managing seller product catalogues
   - name: Cart
     description: |
-      Shopping cart operations for sellers.
+      A staging area for sellers where the products that are staged for order creation can be viewed.
 
       Sellers can manage a cart of products and check out to automatically
       generate a UBL order for a registered buyer.
@@ -1582,6 +1583,8 @@ paths:
 
         The `buyer_id` in the request body must be a UUID of a buyer registered via
         **POST /v1/buyer**. On success the cart is cleared and enriched UBL XML is returned.
+
+        Can be used as an improved Order Creation route splits of product handeling to a different route and is recived from a staging area
       parameters:
         - name: sellerId
           in: path
