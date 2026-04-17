@@ -10,6 +10,7 @@ from app.services.seller_service import (
     delete_seller_service
 )
 from app.services.db_services.seller_db import get_seller_by_id
+from app.services.auth_services import register_auth_service, login_auth_service
 from app.services.db_services.buyer_db import get_buyer_by_id
 from .services.validate_order import validate_order, validate_order_xml
 from .services.api_key import validate_api_key, validate_buyer_auth
@@ -54,6 +55,38 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 @limiter.limit("200 per minute")
 def health_check():
     return jsonify({"status": "running"}), 200
+
+@api.route("/v1/auth/register", methods=["POST"])
+@limiter.limit("20 per minute")
+def register_auth():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Invalid Json Prodivded Homie"}), 400
+
+    with PostgresDB() as db:
+        result = register_auth_service(db, data)
+
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result [1]
+
+    return jsonify(result), 201
+
+@api.route("/v1/auth/login", methods=["POST"])
+@limiter.limit("30 per minute")
+def login_auth():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Invalid Json Provided Homie"}) , 400
+    
+    with PostgresDB() as db:
+        result = login_auth_service(db, data)
+
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+        
+    return jsonify(result), 200
 
 @api.route("/v1/buyer/<buyerId>/order", methods=["POST"])
 @validate_api_key

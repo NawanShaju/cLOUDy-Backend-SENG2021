@@ -248,6 +248,27 @@ CREATE TABLE auth (
     CONSTRAINT unique_auth UNIQUE (api_key, buyer_id)
 );
 
+CREATE TABLE seller_auth (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    api_key                 VARCHAR(255) NOT NULL,
+    seller_id               UUID NOT NULL,
+    created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_seller_auth UNIQUE (api_key, seller_id),
+    CONSTRAINT fk_seller_auth_seller
+        FOREIGN KEY (seller_id) REFERENCES sellers(seller_id) ON DELETE CASCADE
+);
+
+CREATE TABLE buyer_seller (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    buyer_id                UUID NOT NULL,
+    seller_id               UUID NOT NULL,
+    created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_buyer_seller UNIQUE (buyer_id, seller_id),
+    CONSTRAINT fk_buyer_seller_buyer
+        FOREIGN KEY (buyer_id) REFERENCES buyers(buyer_id) ON DELETE CASCADE,
+    CONSTRAINT fk_buyer_seller_seller 
+        FOREIGN KEY (seller_id) REFERENCES sellers(seller_id) ON DELETE CASCADE
+);
 -- =========================================
 -- INDEXES
 -- =========================================
@@ -269,3 +290,7 @@ CREATE INDEX idx_auth_api_key ON auth(api_key);
 CREATE INDEX idx_auth_buyer_id ON auth(buyer_id);
 CREATE INDEX idx_cart_items_cart_id ON cart_items(cart_id);
 CREATE INDEX idx_carts_seller_id ON carts(seller_id);
+CREATE INDEX idx_seller_auth_api_key ON seller_auth(api_key);
+CREATE INDEX idx_seller_auth_seller_id ON seller_auth(seller_id);
+CREATE INDEX idx_buyer_seller_buyer_id ON buyer_seller(buyer_id);
+CREATE INDEX idx_buyer_seller_seller_id ON buyer_Seller(seller_id);
