@@ -74,3 +74,18 @@ def get_inventory_item_by_id(db, inventory_id, seller_id):
         "inventory_id": str(inventory_id),
         "seller_id":    str(seller_id),
     })
+    
+def get_inventory_items_for_product(db, product_id):
+    query = """
+        SELECT 
+            pi.inventory_id,
+            pi.quantity_required,
+            i.item_name,
+            i.item_description,
+            i.purchase_price,
+            i.quantity
+        FROM product_inventory pi
+        JOIN inventory i ON pi.inventory_id = i.inventory_id
+        WHERE pi.product_id = %(product_id)s
+    """
+    return db.execute_query(query, {"product_id": str(product_id)}, fetch_all=True)
