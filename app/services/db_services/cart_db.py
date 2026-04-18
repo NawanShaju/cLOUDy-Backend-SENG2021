@@ -103,3 +103,15 @@ def clear_cart(db, cart_id):
 def delete_cart(db, seller_id):
     query = "DELETE FROM carts WHERE seller_id = %(seller_id)s"
     db.execute_insert_update_delete(query, {"seller_id": str(seller_id)})
+
+
+def get_cart_item(db, cart_id, product_id):
+    query = """
+        SELECT cart_item_id, cart_id, product_id, seller_id, quantity, unit_price
+        FROM cart_items
+        WHERE cart_id = %(cart_id)s AND product_id = %(product_id)s
+    """
+    return db.execute_query(query, {
+        "cart_id":    str(cart_id),
+        "product_id": str(product_id),
+    })

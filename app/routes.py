@@ -2,7 +2,10 @@ from flask import Blueprint, jsonify, request, Response
 from app.services.buyer_service import (
     create_buyer_service,
     update_buyer_service,
-    delete_buyer_service
+    delete_buyer_service,
+    get_buyers_for_seller_service,
+    create_buyer_seller_service,
+    delete_buyer_seller_service
 )
 from app.services.seller_service import (
     create_seller_service,
@@ -548,6 +551,74 @@ def delete_cancelled_orders(buyerId):
         "buyerId": buyerId,
         "message": "All canceled orders deleted successfully"
     }), 200
+
+@api.route("/v1/seller/<sellerId>/buyers", methods=["GET"])
+@validate_api_key
+@limiter.limit("60 per minute")
+def get_buyers_for_seller(sellerId):
+
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+
+    with PostgresDB() as db:
+        buyers = get_buyers_for_seller_service(db, sellerId)
+
+    return jsonify(buyers), 200
+    
+@api.route("/v1/buyer-seller", methods=["POST"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def create_buyer_seller():
+    data = request.get_json()
+    
+    print(data)
+
+    if not data:
+        return jsonify({"error": "Invalid Json Provided"}), 400
+
+    buyer_id = data.get("buyer_id")
+    seller_id = data.get("seller_id")
+    
+
+    if not buyer_id or not is_valid_uuid(buyer_id):
+        return jsonify({"error": "Valid buyer_id is required"}), 400
+
+    if not seller_id or not is_valid_uuid(seller_id):
+        return jsonify({"error": "Valid seller_id is required"}), 400
+
+    with PostgresDB() as db:
+        result = create_buyer_seller_service(db, buyer_id, seller_id)
+
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+
+    return jsonify(result), 201
+
+@api.route("/v1/buyer-seller", methods=["DELETE"])
+@validate_api_key
+@limiter.limit("20 per minute")
+def delete_buyer_seller():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Invalid Json Provided"}), 400
+
+    buyer_id = data.get("buyer_id")
+    seller_id = data.get("seller_id")
+
+    if not buyer_id or not is_valid_uuid(buyer_id):
+        return jsonify({"error": "Valid buyer_id is required"}), 400
+
+    if not seller_id or not is_valid_uuid(seller_id):
+        return jsonify({"error": "Valid seller_id is required"}), 400
+
+    with PostgresDB() as db:
+        result = delete_buyer_seller_service(db, buyer_id, seller_id)
+
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+
+    return jsonify(result), 200
 
 @api.route("/extract-order", methods=["POST"])
 @validate_api_key

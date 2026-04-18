@@ -8,7 +8,11 @@ from .db_services.buyer_db import (
     get_buyer_by_id,
     update_buyer,
     validate_buyer_ownership,
-    delete_buyer
+    delete_buyer,
+    get_buyers_by_seller_id,
+    delete_buyer_seller,
+    buyer_seller_exists,
+    insert_buyer_seller
 )
 from database.PostgresDB import PostgresDB
 from .db_services.order_db import insert_address
@@ -116,3 +120,75 @@ def get_buyers_internal(api_key):
         }
         for row in buyers
     ]
+
+def get_buyers_for_seller_service(db, seller_id):
+    results = get_buyers_by_seller_id(db, seller_id)
+
+    if not results:
+        return []
+
+    buyers = []
+
+    for row in results:
+        buyer = {
+            "buyerId": str(row[0]),
+            "customer_assigned_account_id": row[1],
+            "supplier_assigned_account_id": row[2],
+            "party_name": row[3],
+            "contact": {
+                "name": row[4],
+                "telephone": row[5],
+                "telefax": row[6],
+                "email": row[7],
+            },
+            "tax_scheme": {
+                "tax_scheme_id": row[8],
+                "registration_name": row[9],
+                "company_id": row[10],
+                "exemption_reason": row[11],
+                "scheme_id": row[12],
+                "tax_type_code": row[13],
+            } if row[8] else None,
+            "address": {
+                "street": row[14],
+                "city": row[15],
+                "state": row[16],
+                "postal_code": row[17],
+                "country_code": row[18],
+            } if row[14] else None,
+        }
+
+        buyers.append(buyer)
+
+    return buyers
+
+def create_buyer_seller_service(db, buyer_id, seller_id):
+    # Validate buyer
+    buyer = get_buyer_by_id(db, buyer_id)
+    if not buyer:
+        return {"error": "Buyer not found"}, 404
+
+    # Prevent duplicates
+    if buyer_seller_exists(db, buyer_id, seller_id):
+        return {"error": "Relationship already exists"}, 409
+
+    insert_buyer_seller(db, buyer_id, seller_id)
+
+    return {
+        "buyer_id": buyer_id,
+        "seller_id": seller_id,
+        "message": "Buyer-Seller relationship created successfully"
+    }
+    
+def delete_buyer_seller_service(db, buyer_id, seller_id):
+
+    if not buyer_seller_exists(db, buyer_id, seller_id):
+        return {"error": "Relationship not found"}, 404
+
+    delete_buyer_seller(db, buyer_id, seller_id)
+
+    return {
+        "buyer_id": buyer_id,
+        "seller_id": seller_id,
+        "message": "Buyer-Seller relationship deleted successfully"
+    }
