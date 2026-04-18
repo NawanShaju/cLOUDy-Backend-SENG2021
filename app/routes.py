@@ -582,8 +582,6 @@ def get_buyers_for_seller(sellerId):
 @limiter.limit("20 per minute")
 def create_buyer_seller():
     data = request.get_json()
-    
-    print(data)
 
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
@@ -606,26 +604,18 @@ def create_buyer_seller():
 
     return jsonify(result), 201
 
-@api.route("/v1/buyer-seller", methods=["DELETE"])
+@api.route("/v1/seller/<sellerId>/buyers/<buyerId>", methods=["DELETE"])
 @validate_api_key
 @limiter.limit("20 per minute")
-def delete_buyer_seller():
-    data = request.get_json()
-
-    if not data:
-        return jsonify({"error": "Invalid Json Provided"}), 400
-
-    buyer_id = data.get("buyer_id")
-    seller_id = data.get("seller_id")
-
-    if not buyer_id or not is_valid_uuid(buyer_id):
+def delete_buyer_seller(sellerId, buyerId):
+    if not buyerId or not is_valid_uuid(buyerId):
         return jsonify({"error": "Valid buyer_id is required"}), 400
 
-    if not seller_id or not is_valid_uuid(seller_id):
+    if not sellerId or not is_valid_uuid(sellerId):
         return jsonify({"error": "Valid seller_id is required"}), 400
 
     with PostgresDB() as db:
-        result = delete_buyer_seller_service(db, buyer_id, seller_id)
+        result = delete_buyer_seller_service(db, buyerId, sellerId)
 
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
