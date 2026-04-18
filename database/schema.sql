@@ -28,6 +28,25 @@ CREATE TABLE products (
 );
 
 -- =========================================
+-- PRODUCT INVENTORY TABLE
+-- =========================================
+
+CREATE TABLE product_inventory (
+    product_inventory_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL,
+    inventory_id UUID NOT NULL,
+    quantity_required INTEGER NOT NULL DEFAULT 1 CHECK (quantity_required > 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_pi_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
+    CONSTRAINT fk_pi_inventory
+        FOREIGN KEY (inventory_id) REFERENCES inventory(inventory_id) ON DELETE CASCADE,
+    CONSTRAINT unique_product_inventory
+        UNIQUE (product_id, inventory_id)
+);
+
+-- =========================================
 -- INVENTORY TABLE
 -- =========================================
 CREATE TABLE inventory (
@@ -272,20 +291,20 @@ CREATE TABLE buyer_seller (
 
 CREATE TABLE registered_user (
     user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL,
+    seller_id UUID NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     username VARCHAR(255) NOT NULL UNIQUE,
-    api_key VARCHAR(255) NOT NULL UNIQUE,
-    seller_id UUID NOT NULL UNIQUE,
+    hashed_password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_registered_user_api_key
-        FOREIGN KEY (api_key) REFERENCES clients(api_key) ON DELETE CASCADE,
+    CONSTRAINT fk_registered_user_client
+        FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE CASCADE,
 
     CONSTRAINT fk_registered_user_seller
         FOREIGN KEY (seller_id) REFERENCES sellers(seller_id) ON DELETE CASCADE
 );
-
 -- =========================================
 -- INDEXES
 -- =========================================
@@ -311,7 +330,7 @@ CREATE INDEX idx_seller_auth_api_key ON seller_auth(api_key);
 CREATE INDEX idx_seller_auth_seller_id ON seller_auth(seller_id);
 CREATE INDEX idx_buyer_seller_buyer_id ON buyer_seller(buyer_id);
 CREATE INDEX idx_buyer_seller_seller_id ON buyer_Seller(seller_id);
+CREATE INDEX idx_registered_user_client_id ON registered_user(client_id);
+CREATE INDEX idx_registered_user_seller_id ON registered_user(seller_id);
 CREATE INDEX idx_registered_user_email ON registered_user(email);
 CREATE INDEX idx_registered_user_username ON registered_user(username);
-CREATE INDEX idx_registered_user_api_key ON registered_user(api_key);
-CREATE INDEX idx_registered_user_seller_id ON registered_user(seller_id);

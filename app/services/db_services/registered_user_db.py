@@ -1,6 +1,6 @@
 def get_registered_user_by_email(db, email):
     query = """
-        SELECT user_id, email, username, api_key, seller_id
+        SELECT user_id, client_id, seller_id, email, username, hashed_password
         FROM registered_user
         WHERE LOWER(email) = %(email)s
     """
@@ -9,41 +9,56 @@ def get_registered_user_by_email(db, email):
 
 def get_registered_user_by_username(db, username):
     query = """
-        SELECT user_id, email, username, api_key, seller_id
+        SELECT user_id, client_id, seller_id, email, username, hashed_password
         FROM registered_user
         WHERE username = %(username)s
     """
     return db.execute_query(query, {"username": username})
 
 
-def get_registered_user_by_api_key(db, api_key):
+def get_registered_user_by_login(db, login):
     query = """
-        SELECT user_id, email, username, api_key, seller_id
+        SELECT user_id, client_id, seller_id, email, username, hashed_password
         FROM registered_user
-        WHERE api_key = %(api_key)s
+        WHERE LOWER(email) = %(email)s OR username = %(username)s
     """
-    return db.execute_query(query, {"api_key": api_key})
+    return db.execute_query(query, {
+        "email": login.lower(),
+        "username": login
+    })
 
 
-def insert_registered_user(db, email, username, api_key, seller_id):
+def get_registered_user_by_id(db, user_id):
+    query = """
+        SELECT user_id, client_id, seller_id, email, username, hashed_password
+        FROM registered_user
+        WHERE user_id = %(user_id)s
+    """
+    return db.execute_query(query, {"user_id": str(user_id)})
+
+
+def insert_registered_user(db, client_id, seller_id, email, username, hashed_password):
     query = """
         INSERT INTO registered_user (
+            client_id,
+            seller_id,
             email,
             username,
-            api_key,
-            seller_id
+            hashed_password
         )
         VALUES (
+            %(client_id)s,
+            %(seller_id)s,
             %(email)s,
             %(username)s,
-            %(api_key)s,
-            %(seller_id)s
+            %(hashed_password)s
         )
-        RETURNING user_id, email, username, api_key, seller_id
+        RETURNING user_id, client_id, seller_id, email, username
     """
     return db.execute_insert_update_delete(query, {
+        "client_id": str(client_id),
+        "seller_id": str(seller_id),
         "email": email.lower(),
         "username": username,
-        "api_key": api_key,
-        "seller_id": str(seller_id)
+        "hashed_password": hashed_password
     })

@@ -230,3 +230,74 @@ def delete_buyer(db, buyer_id):
         RETURNING buyer_id
     """
     return db.execute_insert_update_delete(query, {"buyer_id": str(buyer_id)})
+
+def get_buyers_by_seller_id(db, seller_id):
+    query = """
+        SELECT
+            b.buyer_id,
+            b.customer_assigned_account_id,
+            b.supplier_assigned_account_id,
+            b.party_name,
+            b.contact_name,
+            b.contact_telephone,
+            b.contact_telefax,
+            b.contact_email,
+
+            t.tax_scheme_id,
+            t.registration_name,
+            t.company_id,
+            t.exemption_reason,
+            t.scheme_id,
+            t.tax_type_code,
+
+            a.street,
+            a.city,
+            a.state,
+            a.postal_code,
+            a.country_code
+
+        FROM buyer_seller bs
+        JOIN buyers b ON bs.buyer_id = b.buyer_id
+        LEFT JOIN tax_schemes t ON b.tax_scheme_id = t.tax_scheme_id
+        LEFT JOIN addresses a ON b.address_id = a.address_id
+        WHERE bs.seller_id = %(seller_id)s
+    """
+
+    return db.execute_query(query, {"seller_id": seller_id}, fetch_all=True)
+
+
+def insert_buyer_seller(db, buyer_id, seller_id):
+    query = """
+        INSERT INTO buyer_seller (buyer_id, seller_id)
+        VALUES (%(buyer_id)s, %(seller_id)s)
+        ON CONFLICT (buyer_id, seller_id) DO NOTHING
+        RETURNING id
+    """
+    return db.execute_insert_update_delete(query, {
+        "buyer_id": str(buyer_id),
+        "seller_id": str(seller_id)
+    })
+    
+    
+def delete_buyer_seller(db, buyer_id, seller_id):
+    query = """
+        DELETE FROM buyer_seller
+        WHERE buyer_id = %(buyer_id)s
+        AND seller_id = %(seller_id)s
+        RETURNING id
+    """
+    return db.execute_insert_update_delete(query, {
+        "buyer_id": str(buyer_id),
+        "seller_id": str(seller_id)
+    })
+    
+def buyer_seller_exists(db, buyer_id, seller_id):
+    query = """
+        SELECT 1 FROM buyer_seller
+        WHERE buyer_id = %(buyer_id)s
+        AND seller_id = %(seller_id)s
+    """
+    return db.execute_query(query, {
+        "buyer_id": str(buyer_id),
+        "seller_id": str(seller_id)
+    })
