@@ -12,6 +12,10 @@ from app.services.seller_service import (
 from app.services.db_services.seller_db import get_seller_by_id
 from app.services.auth_services import register_auth_service, login_auth_service
 from app.services.db_services.buyer_db import get_buyer_by_id
+from app.services.app_auth_service import (
+    register_app_user_service,
+    login_app_user_service,
+)
 from .services.validate_order import validate_order, validate_order_xml
 from .services.api_key import validate_api_key, validate_buyer_auth
 from .services.db_services.seller_db import get_all_sellers
@@ -30,7 +34,8 @@ from .services.order_service import (
 from .services.db_services.xml_db import xml_to_db
 from .services.api_key import get_api_key
 from .services.db_services.xml_db import xml_to_db_update_cancel
-from .utils.helper import to_iso_date
+from .services.email.email_services import send_email
+from .utils.helper import parse_email_request, to_iso_date
 from app.utils.helper import is_valid_uuid
 from database.PostgresDB import PostgresDB
 from flask import send_from_directory
@@ -62,13 +67,13 @@ def register_auth():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "Invalid Json Prodivded Homie"}), 400
+        return jsonify({"error": "Invalid Json Provided"}), 400
 
     with PostgresDB() as db:
-        result = register_auth_service(db, data)
+        result = register_app_user_service(db, data)
 
         if isinstance(result, tuple):
-            return jsonify(result[0]), result [1]
+            return jsonify(result[0]), result[1]
 
     return jsonify(result), 201
 
@@ -78,14 +83,14 @@ def login_auth():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "Invalid Json Provided Homie"}) , 400
-    
+        return jsonify({"error": "Invalid Json Provided"}), 400
+
     with PostgresDB() as db:
-        result = login_auth_service(db, data)
+        result = login_app_user_service(db, data)
 
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
-        
+
     return jsonify(result), 200
 
 @api.route("/v1/buyer/<buyerId>/order", methods=["POST"])
@@ -563,6 +568,20 @@ def extract_order():
     result = extract_order_full(text, seller_id, api_key)
 
     return jsonify(result)
+
+@api.route("/send-email", methods=["POST"])
+def send_email_route():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"success": False, "message": "Request body must be valid JSON."}), 400
+ 
+    payload, error = parse_email_request(data)
+    if error:
+        return jsonify({"success": False, "message": error}), 422
+ 
+    result = send_email(payload)
+    status_code = 200 if result["success"] else 500
+    return jsonify(result), status_code
 
 def register_swagger_yaml(app):
     @app.route("/swagger.yaml")
