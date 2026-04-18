@@ -9,6 +9,7 @@ from app.services.db_services.registered_user_db import (
 from app.services.db_services.seller_db import get_seller_by_id
 from app.services.seller_service import create_seller_service
 from app.services.api_key import get_client_by_api_key
+from app.services.api_key import hash_password, verify_password
 
 
 def hash_password(password):
@@ -28,6 +29,7 @@ def register_app_user_service(db, data, api_key):
     email = (data.get("email") or "").strip().lower()
     username = (data.get("username") or "").strip()
     password = data.get("password")
+    hashed_pw = hash_password(password)
     seller_data = data.get("seller")
 
     if not email:
@@ -77,7 +79,7 @@ def register_app_user_service(db, data, api_key):
         seller_id=seller_id,
         email=email,
         username=username,
-        hashed_password=hashed_password
+        hashed_password=hashed_pw
     )
 
     user_row = user_result[0]
@@ -110,7 +112,7 @@ def login_app_user_service(db, data, api_key):
         return {"error": "Unauthorized"}, 401
 
     user = get_registered_user_by_login(db, login)
-    if not user:
+    if not verify_password(password, user[5]):
         return {"error": "Invalid credentials"}, 401
 
     if str(user[1]) != str(client[0]):
