@@ -28,6 +28,25 @@ CREATE TABLE products (
 );
 
 -- =========================================
+-- PRODUCT INVENTORY TABLE
+-- =========================================
+
+CREATE TABLE product_inventory (
+    product_inventory_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL,
+    inventory_id UUID NOT NULL,
+    quantity_required INTEGER NOT NULL DEFAULT 1 CHECK (quantity_required > 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_pi_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
+    CONSTRAINT fk_pi_inventory
+        FOREIGN KEY (inventory_id) REFERENCES inventory(inventory_id) ON DELETE CASCADE,
+    CONSTRAINT unique_product_inventory
+        UNIQUE (product_id, inventory_id)
+);
+
+-- =========================================
 -- INVENTORY TABLE
 -- =========================================
 CREATE TABLE inventory (
