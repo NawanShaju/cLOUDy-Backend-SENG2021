@@ -113,3 +113,48 @@ def get_client_by_api_key(db, api_key):
         WHERE api_key = %(api_key)s
     """
     return db.execute_query(query, {"api_key": api_key})
+
+def validate_seller_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        api_key = request.headers.get("api-key")
+        seller_id = kwargs.get("sellerId")
+
+        if not api_key:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        if not seller_id:
+            data = request.get_json(silent=True) or {}
+            seller_id = data.get("seller_id")
+
+        if not seller_id:
+            return jsonify({"error": "sellerId is required"}), 400
+
+        with PostgresDB() as db:
+            client = db.execute_query("""
+                SELECT client_id
+                FROM clients
+                WHERE api_key = %(api_key)s
+                LIMIT 1
+            """, {"api_key": api_key})
+
+            if not client:
+                return jsonify({"error": "Unauthorized"}), 401
+
+            result = db.execute_query("""
+                SELECT 1
+                FROM registered_user
+                WHERE client_id = %(client_id)s
+                AND seller_id = %(seller_id)s
+                LIMIT 1
+            """, {
+                "client_id": str(client[0]),
+                "seller_id": str(seller_id)
+            })
+
+        if not result:
+            return jsonify({"error": "You do not own this seller"}), 403
+
+        return f(*args, **kwargs)
+
+    return decorated
