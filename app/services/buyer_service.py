@@ -186,6 +186,7 @@ def delete_buyer_seller_service(db, buyer_id, seller_id):
         return {"error": "Relationship not found"}, 404
 
     delete_buyer_seller(db, buyer_id, seller_id)
+    delete_buyer(db, buyer_id)
 
     return {
         "buyer_id": buyer_id,
