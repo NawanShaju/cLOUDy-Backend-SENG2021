@@ -12,6 +12,10 @@ from app.services.seller_service import (
 from app.services.db_services.seller_db import get_seller_by_id
 from app.services.auth_services import register_auth_service, login_auth_service
 from app.services.db_services.buyer_db import get_buyer_by_id
+from app.services.app_auth_service import (
+    register_app_user_service,
+    login_app_user_service,
+)
 from .services.validate_order import validate_order, validate_order_xml
 from .services.api_key import validate_api_key, validate_buyer_auth
 from .services.db_services.seller_db import get_all_sellers
@@ -63,13 +67,13 @@ def register_auth():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "Invalid Json Prodivded Homie"}), 400
+        return jsonify({"error": "Invalid Json Provided"}), 400
 
     with PostgresDB() as db:
-        result = register_auth_service(db, data)
+        result = register_app_user_service(db, data)
 
         if isinstance(result, tuple):
-            return jsonify(result[0]), result [1]
+            return jsonify(result[0]), result[1]
 
     return jsonify(result), 201
 
@@ -79,14 +83,14 @@ def login_auth():
     data = request.get_json()
 
     if not data:
-        return jsonify({"error": "Invalid Json Provided Homie"}) , 400
-    
+        return jsonify({"error": "Invalid Json Provided"}), 400
+
     with PostgresDB() as db:
-        result = login_auth_service(db, data)
+        result = login_app_user_service(db, data)
 
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
-        
+
     return jsonify(result), 200
 
 @api.route("/v1/buyer/<buyerId>/order", methods=["POST"])
