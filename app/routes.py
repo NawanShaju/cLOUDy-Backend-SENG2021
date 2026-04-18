@@ -14,6 +14,11 @@ from app.services.seller_service import (
 )
 from app.services.db_services.seller_db import get_seller_by_id
 from app.services.auth_services import register_auth_service, login_auth_service
+from app.services.app_auth_service import (
+    register_app_user_service,
+    login_app_user_service,
+)
+from .services.api_key import validate_api_key
 from app.services.db_services.buyer_db import get_buyer_by_id
 from app.services.app_auth_service import (
     register_app_user_service,
@@ -65,6 +70,7 @@ def health_check():
     return jsonify({"status": "running"}), 200
 
 @api.route("/v1/auth/register", methods=["POST"])
+@validate_api_key
 @limiter.limit("20 per minute")
 def register_auth():
     data = request.get_json()
@@ -72,15 +78,19 @@ def register_auth():
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
 
+    api_key = request.headers.get("api-key")
+
     with PostgresDB() as db:
-        result = register_app_user_service(db, data)
+        result = register_app_user_service(db, data, api_key)
 
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
 
     return jsonify(result), 201
 
+
 @api.route("/v1/auth/login", methods=["POST"])
+@validate_api_key
 @limiter.limit("30 per minute")
 def login_auth():
     data = request.get_json()
@@ -88,8 +98,10 @@ def login_auth():
     if not data:
         return jsonify({"error": "Invalid Json Provided"}), 400
 
+    api_key = request.headers.get("api-key")
+
     with PostgresDB() as db:
-        result = login_app_user_service(db, data)
+        result = login_app_user_service(db, data, api_key)
 
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]

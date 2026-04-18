@@ -105,3 +105,11 @@ def validate_buyer_auth(f):
         return f(*args, **kwargs)
     
     return decorated
+
+def get_client_by_api_key(db, api_key):
+    query = """
+        SELECT client_id, username, api_key
+        FROM clients
+        WHERE api_key = %(api_key)s
+    """
+    return db.execute_query(query, {"api_key": api_key})
