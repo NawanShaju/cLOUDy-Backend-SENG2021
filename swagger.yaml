@@ -1675,10 +1675,170 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
+  /send-email:
+    post:
+      tags:
+        - Utility
+      security: []
+      summary: Send an email
+      description: |
+        Sends an email using the configured SMTP server.
+
+        Supports:
+        - Plain text body
+        - Optional HTML body
+        - CC and BCC recipients
+        - File attachments (base64 encoded)
+
+        If `html_body` is not provided, a default styled email template
+        will be generated automatically.
+
+      operationId: sendEmail
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - to
+                - subject
+                - body
+              properties:
+
+                to:
+                  type: array
+                  description: List of primary recipient email addresses
+                  items:
+                    type: string
+                    format: email
+                  example:
+                    - user@example.com
+
+                subject:
+                  type: string
+                  description: Email subject line
+                  example: Order Created
+
+                body:
+                  type: string
+                  description: Plain text email body
+                  example: |
+                    Your order ORD-1001 has been created successfully.
+
+                sender:
+                  type: string
+                  format: email
+                  description: Optional sender email address
+                  example: noreply@cloudy.com
+
+                cc:
+                  type: array
+                  description: Optional CC recipients
+                  items:
+                    type: string
+                    format: email
+                  example:
+                    - manager@example.com
+
+                bcc:
+                  type: array
+                  description: Optional BCC recipients
+                  items:
+                    type: string
+                    format: email
+
+                html_body:
+                  type: string
+                  description: Optional HTML formatted email body
+                  example: |
+                    <h2>Order Created</h2>
+                    <p>Your order has been processed.</p>
+
+                attachments:
+                  type: array
+                  description: |
+                    Optional file attachments encoded in base64.
+                  items:
+                    type: object
+                    required:
+                      - filename
+                      - data
+                    properties:
+
+                      filename:
+                        type: string
+                        example: invoice.pdf
+
+                      data:
+                        type: string
+                        description: Base64 encoded file content
+                        example: VGhpcyBpcyBhIHRlc3QgZmlsZQ==
+
+      responses:
+
+        "200":
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Email sent to user@example.com
+
+        "400":
+          description: Invalid JSON request body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Request body must be valid JSON.
+
+        "422":
+          description: Validation error in request payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Missing required field 'to'.
+
+        "500":
+          description: Email sending failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Failed to send email.
+
   /v1/proxy:
     post:
       tags:
         - Utility
+      security: []
       summary: Proxy external HTTP request
       description: |
         Forwards an HTTP request to an external API and returns the raw response. **Use in case CORS is deactivated for an API**

@@ -30,7 +30,8 @@ from .services.order_service import (
 from .services.db_services.xml_db import xml_to_db
 from .services.api_key import get_api_key
 from .services.db_services.xml_db import xml_to_db_update_cancel
-from .utils.helper import to_iso_date
+from .services.email.email_services import send_email
+from .utils.helper import parse_email_request, to_iso_date
 from app.utils.helper import is_valid_uuid
 from database.PostgresDB import PostgresDB
 from flask import send_from_directory
@@ -563,6 +564,20 @@ def extract_order():
     result = extract_order_full(text, seller_id, api_key)
 
     return jsonify(result)
+
+@api.route("/send-email", methods=["POST"])
+def send_email_route():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"success": False, "message": "Request body must be valid JSON."}), 400
+ 
+    payload, error = parse_email_request(data)
+    if error:
+        return jsonify({"success": False, "message": error}), 422
+ 
+    result = send_email(payload)
+    status_code = 200 if result["success"] else 500
+    return jsonify(result), status_code
 
 def register_swagger_yaml(app):
     @app.route("/swagger.yaml")
