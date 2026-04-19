@@ -267,15 +267,15 @@ CREATE TABLE auth (
     CONSTRAINT unique_auth UNIQUE (api_key, buyer_id)
 );
 
-CREATE TABLE seller_auth (
-    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    api_key                 VARCHAR(255) NOT NULL,
-    seller_id               UUID NOT NULL,
-    created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_seller_auth UNIQUE (api_key, seller_id),
-    CONSTRAINT fk_seller_auth_seller
-        FOREIGN KEY (seller_id) REFERENCES sellers(seller_id) ON DELETE CASCADE
-);
+-- CREATE TABLE seller_auth (
+--     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     api_key                 VARCHAR(255) NOT NULL,
+--     seller_id               UUID NOT NULL,
+--     created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     CONSTRAINT unique_seller_auth UNIQUE (api_key, seller_id),
+--     CONSTRAINT fk_seller_auth_seller
+--         FOREIGN KEY (seller_id) REFERENCES sellers(seller_id) ON DELETE CASCADE
+-- );
 
 CREATE TABLE buyer_seller (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
