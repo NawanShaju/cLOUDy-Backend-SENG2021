@@ -4,7 +4,8 @@ from .mode_schema import OrderExtraction, parser
 from .prompts import prompt
 from .product_matcher import match_buyer, match_products_with_quantity
 from app.services.product_service import get_seller_products_internal
-from app.services.buyer_service import get_buyers_internal
+from app.services.buyer_service import get_buyers_for_seller_service
+from database.PostgresDB import PostgresDB
 import os
 
 load_dotenv()
@@ -41,7 +42,7 @@ def extract_order_data(text: str) -> dict:
         print("Extraction error:", e)
         return OrderExtraction().model_dump()
     
-def extract_order_full(text: str, seller_id: str, api_key: str):
+def extract_order_full(text: str, seller_id: str):
     try:
         result = extract_order_data(text)
         extracted_products = result.get("products", [])
@@ -53,7 +54,9 @@ def extract_order_full(text: str, seller_id: str, api_key: str):
         if "products" in result:
             del result["products"]
 
-        buyers_list = get_buyers_internal(api_key)
+        with PostgresDB() as db:
+            buyers_list = get_buyers_for_seller_service(db, seller_id)
+            
         matched_buyer_id = match_buyer(extracted_buyer, buyers_list)
         if matched_buyer_id:
             result["buyer_id"] = matched_buyer_id

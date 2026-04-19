@@ -7,6 +7,7 @@ from .services.db_services.xml_db import xml_to_db
 from .utils.helper import is_valid_uuid, to_iso_date
 from database.PostgresDB import PostgresDB
 from app.utils.extensions import limiter
+from app.services.api_key import validate_seller_auth
 from app.services.product_service import (
     create_product_service,
     update_product_service,
@@ -219,6 +220,7 @@ def delete_product(sellerId, productId):
 
 @api.route("/v2/seller/<sellerId>/products", methods=["GET"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("60 per minute")
 def get_seller_products(sellerId):
     if not is_valid_uuid(sellerId):

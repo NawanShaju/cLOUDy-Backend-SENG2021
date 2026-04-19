@@ -14,7 +14,6 @@ from .db_services.buyer_db import (
     buyer_seller_exists,
     insert_buyer_seller
 )
-from database.PostgresDB import PostgresDB
 from .db_services.order_db import insert_address
 
 def create_buyer_service(db, data, api_key):
@@ -98,28 +97,6 @@ def delete_buyer_service(db, buyer_id, api_key):
         "message": "Buyer deleted successfully"
     }, 200
     
-# CHANGE ONCE AKSHAT IS DONE
-def get_buyers_internal(api_key):
-
-    with PostgresDB() as db:
-        buyers = get_buyers_by_api_key(
-            db,
-            api_key
-        )
-
-    if not buyers:
-        return []
-
-    return [
-        {
-            "buyerId": str(row[0]),
-            "party_name": row[1],
-            "customer_assigned_account_id": row[2],
-            "contact_name": row[3],
-            "contact_email": row[4]
-        }
-        for row in buyers
-    ]
 
 def get_buyers_for_seller_service(db, seller_id):
     results = get_buyers_by_seller_id(db, seller_id)
@@ -186,6 +163,7 @@ def delete_buyer_seller_service(db, buyer_id, seller_id):
         return {"error": "Relationship not found"}, 404
 
     delete_buyer_seller(db, buyer_id, seller_id)
+    delete_buyer(db, buyer_id)
 
     return {
         "buyer_id": buyer_id,

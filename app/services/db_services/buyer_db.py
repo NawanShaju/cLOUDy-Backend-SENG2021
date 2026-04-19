@@ -126,7 +126,7 @@ def get_buyer_by_id(db, buyer_id):
     
 def get_buyers_by_api_key(db, api_key):
     query = """
-        SELECT b.buyer_id, b.party_name, b.customer_assigned_account_id, b.contact_email, b.contact_name 
+        SELECT b.buyer_id, b.party_name, b.customer_assigned_account_id, b.contact_name, b.contact_email  
         FROM buyers b
         JOIN auth a ON b.buyer_id::text = a.buyer_id
         WHERE a.api_key = %(api_key)s
