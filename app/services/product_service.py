@@ -177,3 +177,67 @@ def get_product_by_id_service(db, product_id):
 def get_seller_products_internal(seller_id):
     with PostgresDB() as db:
         return get_products_for_seller_service(db, seller_id)
+    
+
+def get_products_by_api_key_service(db, api_key):
+    # 1. Get client
+    client = db.execute_query(
+        "SELECT client_id FROM clients WHERE api_key = %(api_key)s",
+        {"api_key": api_key}
+    )
+
+    if not client:
+        return {"error": "Invalid API key"}, 401
+
+    client_id = client[0]
+
+    # 2. Get seller_ids linked to this client
+    sellers = db.execute_query(
+        """
+        SELECT DISTINCT seller_id
+        FROM registered_user
+        WHERE client_id = %(client_id)s
+        """,
+        {"client_id": str(client_id)}
+    )
+
+    seller_ids = [row for row in sellers]
+
+    if not seller_ids:
+        return []
+
+    # 3. Get products for all sellers
+    query = """
+        SELECT 
+            p.product_id,
+            p.product_name,
+            p.product_description,
+            p.unit_price,
+            p.created_at,
+            p.updated_at,
+            p.seller_id,
+            s.party_name
+        FROM products p
+        LEFT JOIN sellers s ON p.seller_id = s.seller_id
+        WHERE p.seller_id = ANY(%(seller_ids)s::uuid[])
+        ORDER BY p.created_at DESC
+    """
+
+    rows = db.execute_query(query, {"seller_ids": seller_ids}, fetch_all=True)
+
+    products = []
+    for row in rows or []:
+        products.append({
+            "productId": str(row[0]),
+            "productName": row[1],
+            "productDescription": row[2],
+            "unitPrice": str(row[3]),
+            "createdAt": row[4].isoformat() if row[4] else None,
+            "updatedAt": row[5].isoformat() if row[5] else None,
+            "seller": {
+                "sellerId": str(row[6]),
+                "partyName": row[7],
+            }
+        })
+
+    return products
