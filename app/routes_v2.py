@@ -34,6 +34,7 @@ api = Blueprint("v2", __name__)
 
 @api.route("/v2/seller/<sellerId>/cart", methods=["GET"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("60 per minute")
 def get_cart(sellerId):
     if not is_valid_uuid(sellerId):
@@ -49,6 +50,7 @@ def get_cart(sellerId):
 
 @api.route("/v2/seller/<sellerId>/cart/item", methods=["POST"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("30 per minute")
 def add_to_cart(sellerId):
     if not is_valid_uuid(sellerId):
@@ -72,6 +74,7 @@ def add_to_cart(sellerId):
 
 @api.route("/v2/seller/<sellerId>/cart/item/<productId>", methods=["PUT"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("30 per minute")
 def update_cart_item(sellerId, productId):
     if not is_valid_uuid(sellerId):
@@ -93,6 +96,7 @@ def update_cart_item(sellerId, productId):
 
 @api.route("/v2/seller/<sellerId>/cart/item/<productId>", methods=["DELETE"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("30 per minute")
 def remove_from_cart(sellerId, productId):
     if not is_valid_uuid(sellerId):
@@ -110,6 +114,7 @@ def remove_from_cart(sellerId, productId):
 
 @api.route("/v2/seller/<sellerId>/cart", methods=["DELETE"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def clear_cart_route(sellerId):
     if not is_valid_uuid(sellerId):
@@ -125,6 +130,7 @@ def clear_cart_route(sellerId):
 
 @api.route("/v2/seller/<sellerId>/cart/checkout", methods=["POST"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("10 per minute")
 def checkout(sellerId):
     if not is_valid_uuid(sellerId):
@@ -154,6 +160,7 @@ def checkout(sellerId):
 
 @api.route("/v2/seller/<sellerId>/product", methods=["POST"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def create_product(sellerId):
     if not is_valid_uuid(sellerId):
@@ -176,6 +183,7 @@ def create_product(sellerId):
 
 @api.route("/v2/seller/<sellerId>/product/<productId>", methods=["PUT"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def update_product(sellerId, productId):
     if not is_valid_uuid(sellerId):
@@ -200,6 +208,7 @@ def update_product(sellerId, productId):
 
 @api.route("/v2/seller/<sellerId>/product/<productId>", methods=["DELETE"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def delete_product(sellerId, productId):
     if not is_valid_uuid(sellerId):
@@ -304,6 +313,7 @@ def create_order_v2(buyerId):
 
 @api.route("/v2/seller/<sellerId>/inventory", methods=["GET"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("60 per minute")
 def get_inventory(sellerId):
     if not is_valid_uuid(sellerId):
@@ -319,6 +329,7 @@ def get_inventory(sellerId):
 
 @api.route("/v2/seller/<sellerId>/inventory", methods=["POST"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def create_inventory_item(sellerId):
     if not is_valid_uuid(sellerId):
@@ -339,6 +350,7 @@ def create_inventory_item(sellerId):
 
 @api.route("/v2/seller/<sellerId>/inventory/<inventoryId>", methods=["PUT"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def update_inventory_item_route(sellerId, inventoryId):
     if not is_valid_uuid(sellerId):
@@ -362,6 +374,7 @@ def update_inventory_item_route(sellerId, inventoryId):
 
 @api.route("/v2/seller/<sellerId>/inventory/<inventoryId>", methods=["DELETE"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def delete_inventory_item_route(sellerId, inventoryId):
     if not is_valid_uuid(sellerId):
