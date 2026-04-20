@@ -42,7 +42,7 @@ from .services.order_service import (
 )
 from .services.db_services.xml_db import xml_to_db
 from .services.api_key import get_api_key
-from .services.product_service import get_products_by_api_key_service
+from .services.product_service import get_products_by_api_key_service, get_products_for_seller_service
 from .services.db_services.xml_db import xml_to_db_update_cancel
 from .services.email.email_services import send_email
 from .utils.helper import parse_email_request, to_iso_date
@@ -643,6 +643,25 @@ def extract_order():
     result = extract_order_full(text, seller_id)
 
     return jsonify(result)
+
+@api.route("/v1/public/seller/<sellerId>/products", methods=["GET"])
+@validate_api_key
+@limiter.limit("60 per minute")
+def get_public_seller_products_route(sellerId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+
+    with PostgresDB() as db:
+        result = get_products_for_seller_service(db, sellerId)
+
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+
+    return jsonify({
+        "sellerId": sellerId,
+        "count": len(result),
+        "products": result
+    }), 200
 
 @api.route("/v1/products", methods=["GET"])
 @validate_api_key
