@@ -131,7 +131,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedError'
 
-  /v1/buyer:
+
+  /v1/buyer/{buyerId}/order:
+
     post:
       tags:
         - Buyers
