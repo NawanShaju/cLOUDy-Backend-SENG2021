@@ -116,7 +116,8 @@ def get_all_sellers(db, api_key):
         JOIN clients c ON ru.client_id = c.client_id
         WHERE c.api_key = %(api_key)s
         """,
-        {"api_key": api_key}
+        {"api_key": api_key},
+        fetch_all=True
     )
     
     return sellers or []
