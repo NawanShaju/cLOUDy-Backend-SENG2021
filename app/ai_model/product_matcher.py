@@ -37,7 +37,7 @@ def match_buyer(extracted_buyer, buyers_list):
     for buyer in buyers_list:
         score_name = similarity(extracted_name, buyer["party_name"])
         score_account = similarity(extracted_account, buyer["customer_assigned_account_id"])
-        score_email = similarity(extracted_email, buyer["contact_email"])
+        score_email = similarity(extracted_email, (buyer.get("contact", {}).get("email", "")))
         total_score = max(score_name, score_account, score_email)
         
         if total_score > best_score:
