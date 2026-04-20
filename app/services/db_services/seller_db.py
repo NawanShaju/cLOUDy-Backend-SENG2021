@@ -103,12 +103,37 @@ def get_seller_by_id(db, seller_id):
         } if result[14] else None,
     }
 
-def get_all_sellers(db):
-    query = """
-        SELECT seller_id, party_name, customer_assigned_account_id
-        FROM sellers
-    """
-    return db.execute_query(query, {}, fetch_all=True)
+def get_all_sellers(db, api_key):
+    
+    client = db.execute_query(
+        """
+        SELECT client_id 
+        FROM clients 
+        WHERE api_key = %(api_key)s
+        """,
+        {"api_key": api_key}
+    )
+    
+    if not client:
+        return {"error": "Invalid API key"}, 401
+    
+    client_id = client[0]
+    
+    sellers = db.execute_query(
+        """
+        SELECT DISTINCT 
+            s.seller_id,
+            s.party_name,
+            s.customer_assigned_account_id
+        FROM registered_user ru
+        JOIN sellers s ON ru.seller_id = s.seller_id
+        WHERE ru.client_id = %(client_id)s
+        """,
+        {"client_id": client_id},
+        fetch_all=True
+    )
+    
+    return sellers or []
 
 def update_seller(db, seller_id, data, address_id=None, tax_scheme_id=None):
     fields = []

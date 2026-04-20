@@ -28,6 +28,7 @@ from .services.validate_order import validate_order, validate_order_xml
 from .services.api_key import validate_api_key, validate_buyer_auth
 from .services.db_services.seller_db import get_all_sellers
 from .services.db_services.buyer_db import get_buyers_by_api_key
+from app.services.api_key import validate_seller_auth
 from .utils.xml_generation import generate_xml, generate_xml_v2
 from .services.order_service import (
     get_full_order_service,
@@ -256,6 +257,7 @@ def create_seller():
 
 @api.route("/v1/seller/<sellerId>", methods=["PUT"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def update_seller(sellerId):
     data = request.get_json()
@@ -279,6 +281,7 @@ def update_seller(sellerId):
 
 @api.route("/v1/seller/<sellerId>", methods=["DELETE"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def delete_seller(sellerId):
     if not is_valid_uuid(sellerId):
@@ -532,8 +535,11 @@ def get_all_buyers():
 @validate_api_key
 @limiter.limit("60 per minute")
 def get_all_sellers_route():
+    
+    api_key = request.headers.get("api-key")
+    
     with PostgresDB() as db:
-        sellers = get_all_sellers(db)
+        sellers = get_all_sellers(db, api_key)
 
     if not sellers:
         return jsonify({"sellers": []}), 200
@@ -567,6 +573,7 @@ def delete_cancelled_orders(buyerId):
 
 @api.route("/v1/seller/<sellerId>/buyers", methods=["GET"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("60 per minute")
 def get_buyers_for_seller(sellerId):
 
@@ -580,6 +587,7 @@ def get_buyers_for_seller(sellerId):
     
 @api.route("/v1/seller/<sellerId>/buyers/<buyerId>", methods=["POST"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def create_buyer_seller(sellerId, buyerId):
     if not buyerId or not is_valid_uuid(buyerId):
@@ -598,6 +606,7 @@ def create_buyer_seller(sellerId, buyerId):
 
 @api.route("/v1/seller/<sellerId>/buyers/<buyerId>", methods=["DELETE"])
 @validate_api_key
+@validate_seller_auth
 @limiter.limit("20 per minute")
 def delete_buyer_seller(sellerId, buyerId):
     if not buyerId or not is_valid_uuid(buyerId):
