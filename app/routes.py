@@ -541,6 +541,9 @@ def get_all_sellers_route():
     with PostgresDB() as db:
         sellers = get_all_sellers(db, api_key)
 
+    if sellers is None:
+        return jsonify({"error": "Invalid API key"}), 401
+
     if not sellers:
         return jsonify({"sellers": []}), 200
 

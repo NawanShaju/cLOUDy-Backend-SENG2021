@@ -105,20 +105,6 @@ def get_seller_by_id(db, seller_id):
 
 def get_all_sellers(db, api_key):
     
-    client = db.execute_query(
-        """
-        SELECT client_id 
-        FROM clients 
-        WHERE api_key = %(api_key)s
-        """,
-        {"api_key": api_key}
-    )
-    
-    if not client:
-        return {"error": "Invalid API key"}, 401
-    
-    client_id = client[0]
-    
     sellers = db.execute_query(
         """
         SELECT DISTINCT 
@@ -127,10 +113,10 @@ def get_all_sellers(db, api_key):
             s.customer_assigned_account_id
         FROM registered_user ru
         JOIN sellers s ON ru.seller_id = s.seller_id
-        WHERE ru.client_id = %(client_id)s
+        JOIN clients c ON ru.client_id = c.client_id
+        WHERE c.api_key = %(api_key)s
         """,
-        {"client_id": client_id},
-        fetch_all=True
+        {"api_key": api_key}
     )
     
     return sellers or []
