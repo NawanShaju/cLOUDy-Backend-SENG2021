@@ -133,7 +133,7 @@ def delete_product_service(db, product_id, seller_id):
     return {"product_id": str(product_id), "message": "Product deleted successfully"}
 
 
-def get_products_for_seller_service(db, seller_id, product_type=None):
+def get_products_for_seller_service(db, seller_id):
     seller = get_seller_by_id(db, seller_id)
     if not seller:
         return {"error": "Seller not found"}, 404
@@ -150,8 +150,10 @@ def get_products_for_seller_service(db, seller_id, product_type=None):
             "unitPrice":          str(row[3]),
             "createdAt":          row[4].isoformat() if row[4] else None,
             "updatedAt":          row[5].isoformat() if row[5] else None,
+            "imageUrl":           row[6],
             "inventoryItems":     _format_inventory_items(inv_rows),
         })
+
     return products
 
 

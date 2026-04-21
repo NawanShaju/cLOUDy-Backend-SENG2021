@@ -76,8 +76,13 @@ def update_product_v2(db, product_id, seller_id, data):
 def get_products_by_seller(db, seller_id):
     query = """
         SELECT 
-            p.product_id, p.product_name, p.product_description,
-            p.unit_price, p.created_at, p.updated_at
+            p.product_id,
+            p.product_name,
+            p.product_description,
+            p.unit_price,
+            p.created_at,
+            p.updated_at,
+            p.image_url
         FROM products p
         WHERE p.seller_id = %(seller_id)s
         ORDER BY p.created_at DESC

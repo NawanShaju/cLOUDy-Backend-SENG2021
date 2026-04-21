@@ -56,7 +56,7 @@ def delete_inventory_item(db, inventory_id, seller_id):
 
 def get_inventory_by_seller(db, seller_id):
     query = """
-        SELECT inventory_id, item_name, item_description, purchase_price, quantity, created_at, updated_at
+        SELECT inventory_id, item_name, item_description, purchase_price, quantity, created_at, updated_at, image_url
         FROM inventory
         WHERE seller_id = %(seller_id)s
         ORDER BY created_at DESC

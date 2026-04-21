@@ -59,6 +59,7 @@ def get_inventory_service(db, seller_id):
             "quantity": r[4],
             "createdAt": r[5].isoformat() if r[5] else None,
             "updatedAt": r[6].isoformat() if r[6] else None,
+            "imageUrl": r[7],
         })
 
     return {
