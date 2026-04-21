@@ -18,7 +18,7 @@ DATE RULES:
 - "march-20-2025", "20th march 2025", "20/03/2025" → "2025-03-20"
 - "ordr date", "order date", "dt.", "dated" all indicate the order date
 - "wanted by", "deliver by", "delivery date", "no later than" all indicate the delivery date
-- If only one date is given, assume it is the delivery date and make order date as the current date
+- If only one date is given, make delivery date and order date the same 
 
 ACCOUNT RULES:
 - "our acct", "cust acct", "customer account", "CUST#" → customer_assigned_account_id
