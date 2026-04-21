@@ -84,6 +84,7 @@ def insert_order_v2(db, data, buyerId, address_id):
     query = """
         INSERT INTO orders (
             buyer_id,
+            seller_id,
             address_id,
             order_date,
             delivery_date,
@@ -92,6 +93,7 @@ def insert_order_v2(db, data, buyerId, address_id):
         )
         VALUES (
             %(buyerId)s,
+            %(seller_id)s,
             %(address_id)s,
             %(order_date)s,
             %(delivery_date)s,
@@ -102,6 +104,7 @@ def insert_order_v2(db, data, buyerId, address_id):
     """
     params = {
         "buyerId":       buyerId,
+        "seller_id":     data.get("seller_id"),
         "address_id":    address_id,
         "order_date":    data.get("order_date"),
         "delivery_date": data.get("delivery_date"),

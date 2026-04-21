@@ -29,22 +29,26 @@ def match_products_with_quantity(extracted_products, seller_products):
 def match_buyer(extracted_buyer, buyers_list):
     best_score = 0
     best_match = None
-    
+
     extracted_name = extracted_buyer.get("party_name", "")
     extracted_account = extracted_buyer.get("customer_assigned_account_id", "")
-    extracted_email = (extracted_buyer.get("contact", {}).get("email", ""))
+    extracted_email = extracted_buyer.get("contact", {}).get("email", "")
 
     for buyer in buyers_list:
-        score_name = similarity(extracted_name, buyer["party_name"])
-        score_account = similarity(extracted_account, buyer["customer_assigned_account_id"])
-        score_email = similarity(extracted_email, (buyer.get("contact", {}).get("email", "")))
+        buyer_name = buyer.get("party_name", "")
+        buyer_account = buyer.get("customer_assigned_account_id", "")
+        buyer_email = buyer.get("contact_email", "")
+
+        score_name = similarity(extracted_name, buyer_name)
+        score_account = similarity(extracted_account, buyer_account)
+        score_email = similarity(extracted_email, buyer_email)
         total_score = max(score_name, score_account, score_email)
-        
+
         if total_score > best_score:
             best_score = total_score
             best_match = buyer
 
     if best_match and best_score > 0.7:
-        return best_match["buyerId"]
+        return best_match.get("buyerId")
 
     return None
