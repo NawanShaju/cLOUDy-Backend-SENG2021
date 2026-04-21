@@ -1,5 +1,5 @@
 from dateutil.parser import parse
-from datetime import datetime
+from datetime import datetime, date
 from uuid import UUID
 from app.services.email.email_services import EmailPayload
 import json
@@ -16,6 +16,16 @@ def to_iso_date(date_input):
             raise ValueError(f"Cannot parse '{date_input}' as a valid date.")
     else:
         raise TypeError("Input must be a string or datetime object.")
+
+def parse_date(val):
+    if not val:
+        return None
+    if hasattr(val, "isoformat"):
+        return val.isoformat()
+    try:
+        return str(val)
+    except:
+        return None
 
 def is_valid_uuid(value: str) -> bool:
     try:

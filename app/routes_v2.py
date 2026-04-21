@@ -1,10 +1,12 @@
 from flask import Blueprint, jsonify, request, Response
+from app.services.db_services.despatch_db import get_advice_ids_for_seller, get_order_id_for_advice, insert_seller_despatch
+from app.services.db_services.order_db import get_order_details, get_order_by_id
 from app.services.order_service import create_order_v2_service
 from app.utils.xml_generation import generate_xml_v2
 from .services.validate_order import validate_order
 from .services.api_key import validate_api_key, validate_buyer_auth
 from .services.db_services.xml_db import xml_to_db
-from .utils.helper import is_valid_uuid, to_iso_date
+from .utils.helper import is_valid_uuid, parse_date, to_iso_date
 from database.PostgresDB import PostgresDB
 from app.utils.extensions import limiter
 from app.services.api_key import validate_seller_auth
@@ -389,3 +391,78 @@ def delete_inventory_item_route(sellerId, inventoryId):
             return jsonify(result[0]), result[1]
     
     return jsonify(result), 200
+
+@api.route("/v2/seller/<sellerId>/despatch", methods=["POST"])
+@validate_api_key
+def link_despatch(sellerId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON provided"}), 400
+
+    advice_id = data.get("advice_id")
+    order_id  = data.get("order_id")
+
+    if not advice_id:
+        return jsonify({"error": "advice_id is required"}), 400
+
+    with PostgresDB() as db:
+        insert_seller_despatch(db, sellerId, advice_id, order_id)
+
+    return jsonify({"message": "Despatch linked successfully"}), 201
+
+
+@api.route("/v2/seller/<sellerId>/despatch", methods=["GET"])
+@validate_api_key
+def get_seller_despatch_ids(sellerId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+
+    with PostgresDB() as db:
+        advice_ids = get_advice_ids_for_seller(db, sellerId)
+
+    return jsonify({"adviceIds": list(advice_ids)}), 200
+
+@api.route("/v2/seller/<sellerId>/despatch/<adviceId>/order", methods=["GET"])
+@validate_api_key
+def get_order_for_despatch(sellerId, adviceId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+    if not is_valid_uuid(adviceId):
+        return jsonify({"error": "adviceId must be a valid UUID"}), 400
+
+    with PostgresDB() as db:
+        order_id = get_order_id_for_advice(db, adviceId)
+        if not order_id:
+            return jsonify({"error": "No order linked to this despatch"}), 404
+
+        order_row = get_order_by_id(db, order_id, order_id)
+        if not order_row:
+            return jsonify({"error": "Order not found"}), 404
+
+        buyer_id = str(order_row[0][9]) if order_row[0][9] else str(order_row[0][2])
+        results = get_order_details(db, buyer_id, order_id)
+        
+    if not results:
+        return jsonify({"error": "Order details not found"}), 404
+    
+    return jsonify({
+        "orderId":      str(results[0][0]),
+        "status":       results[0][1],
+        "orderDate":    parse_date(order_row[0][4]),
+        "currencyCode": order_row[0][5],
+        "deliveryDate": parse_date(order_row[0][7]),
+        "items": [
+            {
+                "productId":          str(row[2]) if row[2] else None,
+                "productName":        row[3],
+                "productDescription": row[4],
+                "unitPrice":          str(row[5]) if row[5] else None,
+                "quantity":           row[6],
+                "totalPrice":         str(row[7]) if row[7] else None,
+            }
+            for row in results
+        ]
+    }), 200

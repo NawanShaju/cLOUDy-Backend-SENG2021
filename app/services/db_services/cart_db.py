@@ -36,7 +36,8 @@ def get_cart_items(db, cart_id):
             ci.seller_id,
             s.party_name AS seller_name,
             ci.created_at,
-            ci.updated_at
+            ci.updated_at,
+            p.image_url
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.product_id
         JOIN sellers s ON ci.seller_id = s.seller_id
