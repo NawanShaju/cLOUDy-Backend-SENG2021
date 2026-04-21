@@ -44,6 +44,7 @@ from .services.db_services.xml_db import xml_to_db
 from .services.api_key import get_api_key
 from .services.product_service import get_products_by_api_key_service, get_products_for_seller_service
 from .services.db_services.xml_db import xml_to_db_update_cancel
+from app.services.analytics_service import get_seller_analytics_service
 from .services.email.email_services import send_email
 from .utils.helper import parse_email_request, to_iso_date
 from app.utils.helper import is_valid_uuid
@@ -626,6 +627,26 @@ def delete_buyer_seller(sellerId, buyerId):
             return jsonify(result[0]), result[1]
 
     return jsonify(result), 200
+
+@api.route("/v1/seller/<sellerId>/analytics/dashboard", methods=["GET"])
+@validate_api_key
+@validate_seller_auth
+@limiter.limit("60 per minute")
+def get_seller_analytics_dashboard(sellerId):
+    if not is_valid_uuid(sellerId):
+        return jsonify({"error": "sellerId must be a valid UUID"}), 400
+
+    try:
+        with PostgresDB() as db:
+            result = get_seller_analytics_service(db, sellerId)
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Failed to fetch seller analytics dashboard",
+            "details": str(e)
+        }), 500
 
 @api.route("/extract-order", methods=["POST"])
 @validate_api_key
