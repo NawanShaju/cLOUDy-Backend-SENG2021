@@ -62,12 +62,16 @@ tags:
       `SellerSupplierParty` block. When omitted, the `supplier` field in the request body is used as a plain name fallback.
   - name: Products
     description: Operations for managing seller product catalogues
+  - name: Inventory
+    description: Operations for managing seller inventory
   - name: Cart
     description: |
       A staging area for sellers where the products that are staged for order creation can be viewed.
 
       Sellers can manage a cart of products and check out to automatically
       generate a UBL order for a registered buyer.
+  - name: Despatch
+    description: Operations for linking and retrieving despatch advice records
   - name: Utility
     description: Methods for extra functonality
 
@@ -132,7 +136,7 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedError'
 
 
-  /v1/buyer/{buyerId}/order:
+  /v1/buyer:
 
     post:
       tags:
@@ -1904,6 +1908,705 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
+  /v1/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register app user
+      description: |
+        Registers a new application user and creates an associated seller account.
+        Requires a valid API key from an existing client.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterAppUserRequest'
+            example:
+              email: "jane@example.com"
+              username: "jane_doe"
+              password: "securepass123"
+              seller:
+                party_name: "Jane's Store"
+                customer_assigned_account_id: "JS001"
+                address:
+                  street: "123 Main St"
+                  city: "Sydney"
+                  state: "NSW"
+                  postal_code: "2000"
+                  country_code: "AU"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterAppUserResponse'
+        "400":
+          description: Invalid request — missing or invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "409":
+          description: Email or username already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v1/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login app user
+      description: |
+        Authenticates an existing app user by email or username and password.
+        Returns the user and their associated seller details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginAppUserRequest'
+            example:
+              login: "jane_doe"
+              password: "securepass123"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserResponse'
+        "400":
+          description: Invalid request — missing fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid credentials or API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v1/seller/{sellerId}/buyers:
+    get:
+      tags:
+        - Sellers
+      summary: Get buyers for seller
+      description: Returns all buyers linked to the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of buyers for the seller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuyersListResponse'
+        "400":
+          description: Invalid sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v1/seller/{sellerId}/buyers/{buyerId}:
+    post:
+      tags:
+        - Sellers
+      summary: Link buyer to seller
+      description: Creates a relationship between a buyer and a seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: buyerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Buyer linked to seller successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Buyer linked to seller successfully"
+        "400":
+          description: Invalid buyerId or sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "409":
+          description: Link already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    delete:
+      tags:
+        - Sellers
+      summary: Unlink buyer from seller
+      description: Removes the relationship between a buyer and a seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: buyerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Buyer unlinked from seller successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Buyer unlinked successfully"
+        "400":
+          description: Invalid buyerId or sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v1/seller/{sellerId}/analytics/dashboard:
+    get:
+      tags:
+        - Sellers
+      summary: Get seller analytics dashboard
+      description: |
+        Returns a full analytics summary for the seller including revenue,
+        order counts, status breakdown, top products, top buyers, and orders by date.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerAnalyticsResponse'
+        "400":
+          description: Invalid sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v1/upload-image:
+    post:
+      tags:
+        - Utility
+      summary: Upload product or inventory image
+      description: |
+        Uploads an image to Cloudinary and associates the resulting URL with
+        either a product or inventory item. Provide exactly one of `product_id`
+        or `inventory_id` in the form data.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image file to upload
+                product_id:
+                  type: string
+                  format: uuid
+                  description: UUID of the product to associate the image with
+                inventory_id:
+                  type: string
+                  format: uuid
+                  description: UUID of the inventory item to associate the image with
+      responses:
+        "200":
+          description: Image uploaded and linked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadImageResponse'
+        "400":
+          description: Missing file or invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/inventory:
+    get:
+      tags:
+        - Inventory
+      summary: Get inventory for seller
+      description: Returns all inventory items belonging to the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Inventory retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryListResponse'
+        "400":
+          description: Invalid sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    post:
+      tags:
+        - Inventory
+      summary: Create inventory item
+      description: Creates a new inventory item under the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInventoryRequest'
+            example:
+              item_name: "Steel Bolts"
+              item_description: "M8 stainless steel bolts"
+              purchase_price: 0.50
+              quantity: 500
+      responses:
+        "201":
+          description: Inventory item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateInventoryResponse'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/inventory/{inventoryId}:
+    put:
+      tags:
+        - Inventory
+      summary: Update inventory item
+      description: Updates an existing inventory item belonging to the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: inventoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInventoryRequest'
+            example:
+              quantity: 250
+              purchase_price: 0.45
+      responses:
+        "200":
+          description: Inventory item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateInventoryResponse'
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    delete:
+      tags:
+        - Inventory
+      summary: Delete inventory item
+      description: Deletes an inventory item belonging to the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: inventoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Inventory item deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteInventoryResponse'
+        "400":
+          description: Invalid sellerId or inventoryId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/despatch:
+    post:
+      tags:
+        - Despatch
+      summary: Link despatch advice to seller
+      description: |
+        Associates a despatch advice ID with a seller and optionally an order.
+        Each order can only have one linked despatch — if the order already has one,
+        the request is silently ignored.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkDespatchRequest'
+            example:
+              advice_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+              order_id: "1273819c-ad12-4f6a-b8e2-11d7a4f12345"
+      responses:
+        "201":
+          description: Despatch linked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Despatch linked successfully"
+        "400":
+          description: Missing advice_id or invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    get:
+      tags:
+        - Despatch
+      summary: Get despatch advice IDs for seller
+      description: Returns all despatch advice IDs linked to the given seller.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Advice IDs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adviceIds:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                    example:
+                      - "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        "400":
+          description: Invalid sellerId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /v2/seller/{sellerId}/despatch/{adviceId}/order:
+    get:
+      tags:
+        - Despatch
+      summary: Get order linked to a despatch
+      description: |
+        Returns the order details associated with a despatch advice ID,
+        looked up via the seller_despatch linking table.
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: adviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Order details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DespatchOrderResponse'
+        "400":
+          description: Invalid sellerId or adviceId format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        "401":
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidApiKeyError'
+        "404":
+          description: No order linked to this despatch, or order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -2818,3 +3521,380 @@ components:
               customer_assigned_account_id:
                 type: string
                 example: "SUP-98765"
+
+    RegisterAppUserRequest:
+      type: object
+      required:
+        - email
+        - username
+        - password
+        - seller
+      properties:
+        email:
+          type: string
+          format: email
+          example: "jane@example.com"
+        username:
+          type: string
+          example: "jane_doe"
+        password:
+          type: string
+          minLength: 6
+          example: "securepass123"
+        seller:
+          type: object
+          required:
+            - party_name
+          properties:
+            party_name:
+              type: string
+              example: "Jane's Store"
+            customer_assigned_account_id:
+              type: string
+              example: "JS001"
+            supplier_assigned_account_id:
+              type: string
+              example: "SUP-001"
+            address:
+              $ref: '#/components/schemas/Address'
+            contact:
+              $ref: '#/components/schemas/Contact'
+            tax_scheme:
+              $ref: '#/components/schemas/TaxScheme'
+
+    LoginAppUserRequest:
+      type: object
+      required:
+        - login
+        - password
+      properties:
+        login:
+          type: string
+          description: Email address or username
+          example: "jane_doe"
+        password:
+          type: string
+          example: "securepass123"
+
+    AppUserObject:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        client_id:
+          type: string
+          format: uuid
+          example: "c1d2e3f4-a5b6-7890-cdef-ab1234567890"
+        seller_id:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        email:
+          type: string
+          example: "jane@example.com"
+        username:
+          type: string
+          example: "jane_doe"
+
+    RegisterAppUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/AppUserObject'
+        seller:
+          type: object
+          description: Full seller record as returned by get_seller_by_id
+
+    AppUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/AppUserObject'
+        seller:
+          type: object
+          description: Full seller record associated with this user
+
+    SellerAnalyticsResponse:
+      type: object
+      properties:
+        sellerId:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        summary:
+          type: object
+          properties:
+            totalOrders:
+              type: integer
+              example: 142
+            totalRevenue:
+              type: number
+              example: 28450.00
+            averageOrderValue:
+              type: number
+              example: 200.35
+            repeatBuyers:
+              type: integer
+              example: 18
+        statusBreakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+                example: "CREATED"
+              count:
+                type: integer
+                example: 45
+        ordersByDate:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                example: "2026-04-01"
+              orders:
+                type: integer
+                example: 12
+              revenue:
+                type: number
+                example: 2400.00
+        topProducts:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                format: uuid
+                nullable: true
+              itemName:
+                type: string
+                example: "Widget A"
+              totalQuantity:
+                type: integer
+                example: 340
+              totalRevenue:
+                type: number
+                example: 16966.00
+        topBuyers:
+          type: array
+          items:
+            type: object
+            properties:
+              buyerId:
+                type: string
+                format: uuid
+                nullable: true
+              buyerName:
+                type: string
+                example: "Acme Corp"
+              totalOrders:
+                type: integer
+                example: 22
+              totalSpend:
+                type: number
+                example: 5500.00
+
+    UploadImageResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          example: "https://res.cloudinary.com/demo/image/upload/v1/sample.jpg"
+        product_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+        inventory_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: null
+
+    InventoryItem:
+      type: object
+      properties:
+        inventoryId:
+          type: string
+          format: uuid
+          example: "b1c2d3e4-f5a6-7890-bcde-fa1234567890"
+        itemName:
+          type: string
+          example: "Steel Bolts"
+        itemDescription:
+          type: string
+          nullable: true
+          example: "M8 stainless steel bolts"
+        purchasePrice:
+          type: string
+          example: "0.50"
+        quantity:
+          type: integer
+          example: 500
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-04-01T10:00:00+10:00"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-04-15T14:30:00+10:00"
+
+    InventoryListResponse:
+      type: object
+      properties:
+        sellerId:
+          type: string
+          format: uuid
+          example: "6ca72a7f-ad4a-4a55-a292-f44b109fa9b2"
+        count:
+          type: integer
+          example: 4
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItem'
+
+    CreateInventoryRequest:
+      type: object
+      required:
+        - item_name
+        - purchase_price
+        - quantity
+      properties:
+        item_name:
+          type: string
+          example: "Steel Bolts"
+        item_description:
+          type: string
+          example: "M8 stainless steel bolts"
+        purchase_price:
+          type: number
+          minimum: 0
+          example: 0.50
+        quantity:
+          type: integer
+          minimum: 0
+          example: 500
+
+    CreateInventoryResponse:
+      type: object
+      properties:
+        inventoryId:
+          type: string
+          format: uuid
+          example: "b1c2d3e4-f5a6-7890-bcde-fa1234567890"
+        message:
+          type: string
+          example: "Inventory item created successfully"
+
+    UpdateInventoryRequest:
+      type: object
+      properties:
+        item_name:
+          type: string
+          example: "Steel Bolts Updated"
+        item_description:
+          type: string
+          example: "Updated description"
+        purchase_price:
+          type: number
+          example: 0.45
+        quantity:
+          type: integer
+          example: 250
+
+    UpdateInventoryResponse:
+      type: object
+      properties:
+        inventoryId:
+          type: string
+          format: uuid
+          example: "b1c2d3e4-f5a6-7890-bcde-fa1234567890"
+        message:
+          type: string
+          example: "Inventory item updated successfully"
+
+    DeleteInventoryResponse:
+      type: object
+      properties:
+        inventoryId:
+          type: string
+          format: uuid
+          example: "b1c2d3e4-f5a6-7890-bcde-fa1234567890"
+        message:
+          type: string
+          example: "Inventory item deleted successfully"
+
+    LinkDespatchRequest:
+      type: object
+      required:
+        - advice_id
+      properties:
+        advice_id:
+          type: string
+          format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        order_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "1273819c-ad12-4f6a-b8e2-11d7a4f12345"
+
+    DespatchOrderResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+          example: "1273819c-ad12-4f6a-b8e2-11d7a4f12345"
+        status:
+          type: string
+          example: "CREATED"
+        orderDate:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-04-01"
+        deliveryDate:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-04-15"
+        currencyCode:
+          type: string
+          example: "AUD"
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                format: uuid
+                nullable: true
+                example: "a9c3d2f1-1234-4f6a-b8e2-11d7a4f12345"
+              productName:
+                type: string
+                example: "Widget A"
+              productDescription:
+                type: string
+                nullable: true
+                example: "An industrial-grade widget"
+              unitPrice:
+                type: string
+                example: "49.99"
+              quantity:
+                type: integer
+                example: 2
+              totalPrice:
+                type: string
+                example: "99.98"
+      

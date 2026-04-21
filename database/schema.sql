@@ -181,6 +181,22 @@ CREATE TABLE order_documents (
 );
 
 -- =========================================
+-- SELLER DESPACTH TABLE
+-- =========================================
+CREATE TABLE seller_despatch (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    seller_id   UUID NOT NULL,
+    advice_id   VARCHAR(255) NOT NULL,
+    order_id    UUID,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_seller_despatch_seller
+        FOREIGN KEY (seller_id) REFERENCES sellers(seller_id) ON DELETE CASCADE,
+
+    CONSTRAINT unique_seller_advice UNIQUE (seller_id, advice_id)
+);
+
+-- =========================================
 -- BUYERS TABLE
 -- =========================================
 CREATE TABLE buyers (
@@ -324,3 +340,5 @@ CREATE INDEX idx_registered_user_client_id ON registered_user(client_id);
 CREATE INDEX idx_registered_user_seller_id ON registered_user(seller_id);
 CREATE INDEX idx_registered_user_email ON registered_user(email);
 CREATE INDEX idx_registered_user_username ON registered_user(username);
+CREATE INDEX idx_seller_despatch_seller_id ON seller_despatch(seller_id);
+CREATE INDEX idx_seller_despatch_advice_id ON seller_despatch(advice_id);

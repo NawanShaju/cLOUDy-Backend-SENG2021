@@ -50,6 +50,7 @@ def _format_cart(cart_row, items):
             "unitPrice": str(item[4]),
             "quantity": item[5],
             "lineTotal": str(round(line_total, 2)),
+            "imageUrl": item[11],
             "addedAt": item[9].isoformat() if item[9] else None,
             "updatedAt": item[10].isoformat() if item[10] else None,
         })
