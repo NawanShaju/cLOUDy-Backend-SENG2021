@@ -4,6 +4,7 @@ from .routes import api, swaggerui_blueprint, register_swagger_yaml
 from .proxy_route import proxy
 from .routes_v2 import api as api_v2
 from flask_cors import CORS
+import app.config.run
 
 def create_app(config_object="config.Config"):
     app = Flask(__name__)

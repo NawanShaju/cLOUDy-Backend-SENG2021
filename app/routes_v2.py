@@ -241,7 +241,7 @@ def get_seller_products(sellerId):
         return jsonify({"error": "Invalid product type"}), 400
 
     with PostgresDB() as db:
-        result = get_products_for_seller_service(db, sellerId, product_type)
+        result = get_products_for_seller_service(db, sellerId)
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
 

@@ -53,6 +53,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from app.utils.extensions import limiter
 from app.utils.helper import is_json
 from app.ai_model.model import extract_order_full
+import cloudinary.uploader
 import os
 
 api = Blueprint("v1", __name__)
@@ -659,6 +660,47 @@ def get_products_by_api_key():
         "count": len(result),
         "products": result
     }), 200
+    
+@api.route('/v1/upload-image', methods=['POST'])
+@validate_api_key
+def upload_image():
+    file = request.files.get('file')
+
+    product_id = request.form.get('product_id')
+    inventory_id = request.form.get('inventory_id')
+
+    if not file:
+        return jsonify({"error": "No file provided"}), 400
+
+    if not product_id and not inventory_id:
+        return jsonify({"error": "Must provide product_id or inventory_id"}), 400
+
+    if product_id and inventory_id:
+        return jsonify({"error": "Provide only one of product_id or inventory_id"}), 400
+
+    result = cloudinary.uploader.upload(file)
+    image_url = result['secure_url']
+
+    with PostgresDB() as db:
+        if product_id:
+            db.execute_insert_update_delete("""
+                UPDATE products
+                SET image_url = %s
+                WHERE product_id = %s
+            """, (image_url, product_id))
+
+        elif inventory_id:
+            db.execute_insert_update_delete("""
+                UPDATE inventory
+                SET image_url = %s
+                WHERE inventory_id = %s
+            """, (image_url, inventory_id))
+
+    return jsonify({
+        "url": image_url,
+        "product_id": product_id,
+        "inventory_id": inventory_id
+    })
 
 @api.route("/send-email", methods=["POST"])
 def send_email_route():

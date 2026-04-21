@@ -28,4 +28,5 @@ dependencies = [
     "pydantic>=2.12.5",
     "langchain-huggingface>=1.2.1",
     "langchain-google-genai>=4.2.1",
+    "cloudinary>=1.44.2",
 ]
